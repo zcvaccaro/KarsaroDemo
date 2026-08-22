@@ -1,0 +1,101 @@
+@import "tailwindcss";
+
+:root {
+  --karsa-bg: #12141a;
+  --karsa-bg-elevated: #171a22;
+  --karsa-surface: #1c2029;
+  --karsa-surface-hover: #252a35;
+  --karsa-border: #2c313c;
+  --karsa-border-subtle: #232833;
+  --karsa-text: #e8eaef;
+  --karsa-text-muted: #8f96a3;
+  --karsa-text-faint: #6a7180;
+  --karsa-accent: #9aaf9d;
+  --karsa-accent-soft: rgba(154, 175, 157, 0.14);
+  --karsa-accent-strong: #b4c7b6;
+  --karsa-danger: #c48989;
+  --karsa-warning: #c4b089;
+  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+  --font-sans: "Manrope", system-ui, sans-serif;
+}
+
+@theme inline {
+  --color-karsa-bg: var(--karsa-bg);
+  --color-karsa-bg-elevated: var(--karsa-bg-elevated);
+  --color-karsa-surface: var(--karsa-surface);
+  --color-karsa-surface-hover: var(--karsa-surface-hover);
+  --color-karsa-border: var(--karsa-border);
+  --color-karsa-border-subtle: var(--karsa-border-subtle);
+  --color-karsa-text: var(--karsa-text);
+  --color-karsa-muted: var(--karsa-text-muted);
+  --color-karsa-faint: var(--karsa-text-faint);
+  --color-karsa-accent: var(--karsa-accent);
+  --color-karsa-accent-soft: var(--karsa-accent-soft);
+  --color-karsa-accent-strong: var(--karsa-accent-strong);
+  --color-karsa-danger: var(--karsa-danger);
+  --color-karsa-warning: var(--karsa-warning);
+  --font-sans: var(--font-sans);
+  --font-display: var(--font-display);
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--karsa-bg);
+  color: var(--karsa-text);
+  font-family: var(--font-sans);
+  antialiased: true;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+@keyframes quick-action-nudge-left {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-6px);
+  }
+}
+
+@keyframes quick-action-nudge-right {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(6px);
+  }
+}
+
+.animate-quick-action-nudge-left {
+  animation: quick-action-nudge-left 0.55s ease-in-out infinite;
+}
+
+.animate-quick-action-nudge-right {
+  animation: quick-action-nudge-right 0.55s ease-in-out infinite;
+}
+
+/* Booking-flow horizontal strip — thin green bar when overflowing */
+.karsa-h-scroll {
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--karsa-accent) transparent;
+}
+
+.karsa-h-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.karsa-h-scroll::-webkit-scrollbar-thumb {
+  background: var(--karsa-accent);
+  border-radius: 999px;
+}
