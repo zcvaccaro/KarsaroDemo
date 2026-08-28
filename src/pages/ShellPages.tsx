@@ -1,13 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { FullVersionNote } from "../components/FullVersionNote";
+import { EntityOpenButton } from "../components/EntityModals";
 import { DateInput } from "../components/inputs/DateInput";
 import { HmTimeSelect } from "../components/inputs/HmTimeSelect";
 import { KarsaSelect } from "../components/inputs/KarsaSelect";
 import { KarsaToggleField } from "../components/karsa-toggle-switch";
+import { MetricsClient } from "../components/MetricsClient";
+import { rangeBounds } from "../lib/insights-range";
+import { getServiceColor } from "../lib/service-colors";
 import {
+  appointmentStatus,
   clientDisplayName,
   confirmationPageTitle,
+  isBookableEmployee,
   todayISO,
   upsertAppointment,
   upsertClient,
@@ -69,7 +75,10 @@ export function BookNowPage() {
     () => searchParams.get("clientId") ?? "",
   );
   const [serviceId, setServiceId] = useState(services[0]?.id ?? "");
-  const [employeeId, setEmployeeId] = useState(employees[0]?.id ?? "");
+  const bookableEmployees = employees.filter(isBookableEmployee);
+  const [employeeId, setEmployeeId] = useState(
+    bookableEmployees[0]?.id ?? "",
+  );
   const [date, setDate] = useState(todayISO());
   const [time, setTime] = useState("10:00");
   const [done, setDone] = useState(false);
@@ -268,7 +277,7 @@ export function BookNowPage() {
             aria-label="Practitioner"
             value={employeeId}
             onChange={setEmployeeId}
-            options={employees.map((e) => ({
+            options={bookableEmployees.map((e) => ({
               value: e.id,
               label: e.name,
             }))}
@@ -325,6 +334,7 @@ export function BookNowPage() {
               date,
               startMin: hh * 60 + mm,
               durationMin: svc?.durationMin ?? 60,
+              status: "scheduled",
             });
             setDone(true);
           }}
@@ -377,9 +387,10 @@ export function WaitlistPage() {
         ) : (
           rows.map((e) => (
             <li key={e.id}>
-              <Link
-                to={`/dashboard/waitlist/${e.id}`}
-                className="flex flex-wrap items-center justify-between gap-3 border border-karsa-border-subtle px-4 py-3 transition-colors hover:border-karsa-accent"
+              <EntityOpenButton
+                kind="waitlist"
+                id={e.id}
+                className="flex w-full flex-wrap items-center justify-between gap-3 border border-karsa-border-subtle px-4 py-3 text-left transition-colors hover:border-karsa-accent"
               >
                 <div>
                   <p className="text-sm font-medium text-karsa-text">
@@ -392,7 +403,7 @@ export function WaitlistPage() {
                 <span className="rounded-md bg-karsa-accent-soft px-2 py-1 text-xs capitalize text-karsa-accent-strong">
                   {e.status}
                 </span>
-              </Link>
+              </EntityOpenButton>
             </li>
           ))
         )}
@@ -616,9 +627,6 @@ export function BusinessPage() {
         {[
           ["Business name", "Sample Studio"],
           ["Timezone", "America/New_York"],
-          ["Default buffer", "15 minutes"],
-          ["Reminder hours before", "28"],
-          ["Public booking cutoff", "2 hours"],
           ["Payment link URL", "https://pay.example.com/sample"],
         ].map(([label, value]) => (
           <label key={label} className="block text-sm text-karsa-muted">
@@ -630,6 +638,54 @@ export function BusinessPage() {
             />
           </label>
         ))}
+      </div>
+
+      <div className="grid gap-6 sm:grid-cols-3">
+        <div>
+          <p className="text-sm text-karsa-muted">Default buffer (minutes)</p>
+          <input
+            readOnly
+            value="15"
+            className="mt-1 w-full rounded-md border border-karsa-border bg-karsa-bg px-3 py-2 text-karsa-text"
+          />
+          <p className="mt-1.5 text-xs text-karsa-faint">
+            Added after each appointment as unbookable time so staff can reset
+            the room or finish service breakdown. Individual services can
+            override this.
+          </p>
+        </div>
+        <div>
+          <p className="text-sm text-karsa-muted">Reminder hours before</p>
+          <input
+            readOnly
+            value="28"
+            className="mt-1 w-full rounded-md border border-karsa-border bg-karsa-bg px-3 py-2 text-karsa-text"
+          />
+          <p className="mt-1.5 text-xs text-karsa-faint">
+            Your{" "}
+            <Link
+              to="/dashboard/settings/email"
+              className="text-karsa-accent-strong underline-offset-4 hover:underline"
+            >
+              customized reminder email
+            </Link>{" "}
+            is sent this many hours before the appointment start time.
+          </p>
+        </div>
+        <div>
+          <p className="text-sm text-karsa-muted">
+            Public booking cutoff (hours)
+          </p>
+          <input
+            readOnly
+            value="2"
+            className="mt-1 w-full rounded-md border border-karsa-border bg-karsa-bg px-3 py-2 text-karsa-text"
+          />
+          <p className="mt-1.5 text-xs text-karsa-faint">
+            Slots starting within this many hours are hidden on the public book
+            page. 0 = only block past times.
+          </p>
+        </div>
       </div>
 
       <div className="space-y-4 border border-karsa-border-subtle p-4">
@@ -854,16 +910,65 @@ export function DrivePage() {
 }
 
 export function MetricsPage() {
+  const [searchParams] = useSearchParams();
+  const range = searchParams.get("range") ?? "month";
+  const employeeFilter = searchParams.get("employeeId") || null;
+  const { appointments, services, employees } = useDemoStore();
+  const { start, end } = rangeBounds(range);
+
+  const points = appointments
+    .filter((a) => {
+      const [y, m, d] = a.date.split("-").map(Number);
+      const t = new Date(y, m - 1, d).getTime();
+      return t >= start.getTime() && t < end.getTime();
+    })
+    .map((a) => {
+      const service = services.find((s) => s.id === a.serviceId);
+      return {
+        id: a.id,
+        day: a.date,
+        status: appointmentStatus(a),
+        serviceId: a.serviceId,
+        serviceName: service?.name ?? "Service",
+        color: getServiceColor(service?.colorId).swatch,
+        employeeId: a.employeeId,
+      };
+    });
+
+  const serviceMeta = services.map((s) => ({
+    id: s.id,
+    name: s.name,
+    color: getServiceColor(s.colorId).swatch,
+    active: s.active !== false,
+    listPrice: s.price,
+  }));
+
+  const employeeMeta = employees.map((e) => ({
+    id: e.id,
+    label: e.name,
+  }));
+
   return (
-    <PageChrome
-      eyebrow="Insights"
-      title="Metrics"
-      blurb="Charts of how busy you were — by service, staff member, and time period. In the full product this reads your real appointments; here it’s a preview of that screen."
-      maxWidth="max-w-6xl"
-    >
-      <FullVersionNote more="The live dashboard charts real appointments with selectable timeframes (default: this month), colored service lines, employee filters, and toggles for booked / scheduled / completed / cancellations / no-shows." />
-      <div className="h-48 rounded-md border border-dashed border-karsa-border-subtle bg-karsa-surface/30" />
-    </PageChrome>
+    <div className="mx-auto max-w-6xl">
+      <p className="text-xs font-medium tracking-[0.16em] text-karsa-faint uppercase">
+        Insights
+      </p>
+      <h1 className="mt-2 font-display text-3xl tracking-tight text-karsa-text">
+        Metrics
+      </h1>
+      <p className="mt-3 max-w-2xl text-base text-karsa-muted">
+        Appointment volume over time by service. Toggle services, filter by
+        practitioner, and optionally overlay cancellations.
+      </p>
+
+      <MetricsClient
+        range={range}
+        employeeId={employeeFilter}
+        points={points}
+        services={serviceMeta}
+        employees={employeeMeta}
+      />
+    </div>
   );
 }
 

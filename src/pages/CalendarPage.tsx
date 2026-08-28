@@ -1,4 +1,4 @@
-import {
+﻿import {
   useCallback,
   useEffect,
   useMemo,
@@ -54,18 +54,15 @@ import {
   type CalendarLocationHour,
 } from "../lib/calendar-utils";
 import { CalendarPeriodControls } from "../components/CalendarPeriodControls";
-import { DateInput } from "../components/inputs/DateInput";
-import { HmTimeSelect } from "../components/inputs/HmTimeSelect";
-import { KarsaSelect } from "../components/inputs/KarsaSelect";
+import { useEntityModals } from "../components/EntityModals";
 import { bindCalendarDragPointer, lockPageScrollForDrag } from "../lib/long-press-drag";
 import { DEFAULT_SERVICE_COLOR_ID } from "../lib/service-colors";
 import {
   clientDisplayName,
-  deleteAppointment,
+  showsOnCalendar,
   upsertAppointment,
   type Appointment,
   type Client,
-  type DemoState,
   type Employee,
   type WaitlistEntry,
 } from "../lib/store";
@@ -112,6 +109,7 @@ function DayWaitlistDropdown({
   placement?: "default" | "day-header";
 }) {
   const [open, setOpen] = useState(false);
+  const { openWaitlist } = useEntityModals();
   if (items.length === 0) return null;
 
   const isHeader = placement === "day-header";
@@ -165,14 +163,17 @@ function DayWaitlistDropdown({
           <ul className="overflow-y-auto rounded-md border border-dashed border-karsa-warning/50 bg-karsa-warning/10 py-1">
             {items.map((item) => (
               <li key={item.id}>
-                <Link
-                  to={`/dashboard/waitlist/${item.id}`}
-                  className="block truncate px-2.5 py-1.5 text-xs text-karsa-muted transition-colors hover:bg-karsa-warning/20 hover:text-karsa-text"
-                  onClick={(e) => e.stopPropagation()}
+                <button
+                  type="button"
+                  className="block w-full truncate px-2.5 py-1.5 text-left text-xs text-karsa-muted transition-colors hover:bg-karsa-warning/20 hover:text-karsa-text"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openWaitlist(item.id);
+                  }}
                 >
                   {item.clientName}
-                  {item.serviceName ? ` · ${item.serviceName}` : ""}
-                </Link>
+                  {item.serviceName ? ` Â· ${item.serviceName}` : ""}
+                </button>
               </li>
             ))}
           </ul>
@@ -180,14 +181,17 @@ function DayWaitlistDropdown({
           <ul className="min-h-0 overflow-hidden">
             {items.map((item) => (
               <li key={item.id} className="pt-1">
-                <Link
-                  to={`/dashboard/waitlist/${item.id}`}
-                  className="block truncate rounded-md border border-dashed border-karsa-warning/50 bg-karsa-warning/10 px-1.5 py-1 text-[10px] text-karsa-muted transition-colors hover:border-karsa-warning hover:bg-karsa-warning/20 hover:text-karsa-text"
-                  onClick={(e) => e.stopPropagation()}
+                <button
+                  type="button"
+                  className="block w-full truncate rounded-md border border-dashed border-karsa-warning/50 bg-karsa-warning/10 px-1.5 py-1 text-left text-[10px] text-karsa-muted transition-colors hover:border-karsa-warning hover:bg-karsa-warning/20 hover:text-karsa-text"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openWaitlist(item.id);
+                  }}
                 >
                   {item.clientName}
-                  {item.serviceName ? ` · ${item.serviceName}` : ""}
-                </Link>
+                  {item.serviceName ? ` Â· ${item.serviceName}` : ""}
+                </button>
               </li>
             ))}
           </ul>
@@ -649,8 +653,8 @@ function WeekView({
         </div>
       </div>
       <p className="border-t border-karsa-border-subtle px-3 py-2 text-[11px] text-karsa-faint">
-        Showing {hourLabel(bounds.startHour)}–{hourLabel(bounds.endHour)}. Dark
-        orange marks closed hours — bookings must start in open hours.
+        Showing {hourLabel(bounds.startHour)}â€“{hourLabel(bounds.endHour)}. Dark
+        orange marks closed hours â€” bookings must start in open hours.
       </p>
       {hoursNotice ? (
         <p className="border-t border-karsa-border-subtle px-3 py-2 text-xs text-karsa-warning">
@@ -678,7 +682,7 @@ function WeekView({
             const pending = pendingBreakRef.current;
             window.alert(
               pending
-                ? `In the live app this adds a staff break (${pending.start} – ${pending.end}).`
+                ? `In the live app this adds a staff break (${pending.start} â€“ ${pending.end}).`
                 : "In the live app this adds a staff break on the calendar.",
             );
           }}
@@ -938,7 +942,7 @@ function DayView({
       >
         <p className="text-xs tracking-wide text-karsa-faint uppercase">
           {day.toLocaleDateString(undefined, { weekday: "long" })}
-          {closed ? " · Closed" : ""}
+          {closed ? " Â· Closed" : ""}
         </p>
         <h2 className="mt-0.5 font-display text-xl text-karsa-text">
           {day.toLocaleDateString(undefined, {
@@ -1034,7 +1038,7 @@ function DayView({
             const pending = pendingBreakRef.current;
             window.alert(
               pending
-                ? `In the live app this adds a staff break (${pending.start} – ${pending.end}).`
+                ? `In the live app this adds a staff break (${pending.start} â€“ ${pending.end}).`
                 : "In the live app this adds a staff break on the calendar.",
             );
           }}
@@ -1203,7 +1207,7 @@ export function CalendarPage() {
   const calendarAppointments = useMemo(
     () =>
       toCalendarAppointments(
-        state.appointments,
+        state.appointments.filter(showsOnCalendar),
         state.employees,
         state.clients,
         state.services,
@@ -1233,10 +1237,7 @@ export function CalendarPage() {
   );
 
   const [bookModal, setBookModal] = useState<BookModalDefaults | null>(null);
-  const [detailAppt, setDetailAppt] = useState<CalendarAppointment | null>(
-    null,
-  );
-  const [detailEditing, setDetailEditing] = useState(false);
+  const { openAppointment } = useEntityModals();
 
   const weekStart = useMemo(() => startOfWeek(anchor), [anchor]);
   const monthStart = useMemo(() => startOfMonth(anchor), [anchor]);
@@ -1257,7 +1258,7 @@ export function CalendarPage() {
       });
     }
     const end = addDays(weekStart, 6);
-    return `${weekStart.toLocaleDateString(undefined, { month: "short", day: "numeric" })} – ${end.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}`;
+    return `${weekStart.toLocaleDateString(undefined, { month: "short", day: "numeric" })} â€“ ${end.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}`;
   }, [anchor, view, weekStart]);
 
   const pushParams = useCallback(
@@ -1300,17 +1301,8 @@ export function CalendarPage() {
   );
 
   function onOpenAppointment(appt: CalendarAppointment) {
-    setDetailEditing(false);
-    setDetailAppt(appt);
+    openAppointment(appt.id);
   }
-
-  const linkedForms = useMemo(
-    () =>
-      state.forms.filter(
-        (f) => f.showInCalendarDescription && f.active && !f.isDraft,
-      ),
-    [state.forms],
-  );
 
   return (
     <div className="mx-auto max-w-7xl">
@@ -1422,287 +1414,24 @@ export function CalendarPage() {
           services={state.services}
           onClose={() => setBookModal(null)}
           onSave={(form) => {
-            const [hh, mm] = bookModal.time.split(":").map(Number);
+            const [hh, mm] = form.time.split(":").map(Number);
             const startMin = (hh || 0) * 60 + (mm || 0);
+            const id = crypto.randomUUID();
             upsertAppointment({
-              id: crypto.randomUUID(),
+              id,
               employeeId: form.employeeId,
               clientId: form.clientId,
               serviceId: form.serviceId,
-              date: bookModal.date,
+              date: form.date,
               startMin,
               durationMin: form.durationMin,
+              status: "scheduled",
             });
             setBookModal(null);
-          }}
-        />
-      ) : null}
-
-      {detailAppt ? (
-        <DemoAppointmentDetail
-          appt={detailAppt}
-          editing={detailEditing}
-          onEditingChange={setDetailEditing}
-          store={state}
-          linkedForms={linkedForms}
-          onClose={() => {
-            setDetailEditing(false);
-            setDetailAppt(null);
+            openAppointment(id);
           }}
         />
       ) : null}
     </div>
   );
 }
-
-function minToHm(min: number) {
-  const h = Math.floor(min / 60);
-  const m = min % 60;
-  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-}
-
-function hmToMin(hm: string) {
-  const [h, m] = hm.split(":").map(Number);
-  return (h || 0) * 60 + (m || 0);
-}
-
-function DemoAppointmentDetail({
-  appt,
-  editing,
-  onEditingChange,
-  store,
-  linkedForms,
-  onClose,
-}: {
-  appt: CalendarAppointment;
-  editing: boolean;
-  onEditingChange: (v: boolean) => void;
-  store: DemoState;
-  linkedForms: { id: string; name: string; audience: string }[];
-  onClose: () => void;
-}) {
-  const row = store.appointments.find((a) => a.id === appt.id);
-  const [date, setDate] = useState(row?.date ?? "");
-  const [time, setTime] = useState(minToHm(row?.startMin ?? 0));
-  const [durationMin, setDurationMin] = useState(row?.durationMin ?? 60);
-  const [serviceId, setServiceId] = useState(row?.serviceId ?? "");
-  const [employeeId, setEmployeeId] = useState(row?.employeeId ?? "");
-
-  useEffect(() => {
-    const next = store.appointments.find((a) => a.id === appt.id);
-    setDate(next?.date ?? "");
-    setTime(minToHm(next?.startMin ?? 0));
-    setDurationMin(next?.durationMin ?? 60);
-    setServiceId(next?.serviceId ?? "");
-    setEmployeeId(next?.employeeId ?? "");
-  }, [appt.id, store.appointments, editing]);
-
-  function save() {
-    if (!row) return;
-    upsertAppointment({
-      ...row,
-      date,
-      startMin: hmToMin(time),
-      serviceId,
-      employeeId,
-      durationMin: Math.max(15, durationMin || row.durationMin),
-    });
-    onEditingChange(false);
-    onClose();
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/55 p-4 py-10">
-      <div
-        className="absolute inset-0"
-        onClick={onClose}
-        role="presentation"
-      />
-      <div
-        className="relative z-10 w-full max-w-lg rounded-lg border border-karsa-border bg-karsa-bg p-6 shadow-lg"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="appt-detail-title"
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-medium tracking-[0.16em] text-karsa-faint uppercase">
-              Details
-            </p>
-            <h2
-              id="appt-detail-title"
-              className="mt-1 font-display text-2xl text-karsa-text"
-            >
-              Appointment
-            </h2>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md border border-karsa-border px-3 py-1.5 text-sm text-karsa-muted hover:bg-karsa-surface"
-          >
-            Close
-          </button>
-        </div>
-
-        {editing && row ? (
-          <div className="mt-6 space-y-4 border-t border-karsa-border-subtle pt-4">
-            <label className="block text-xs text-karsa-faint">
-              Date
-              <div className="mt-1">
-                <DateInput value={date} onChange={setDate} />
-              </div>
-            </label>
-            <label className="block text-xs text-karsa-faint">
-              Time
-              <div className="mt-1">
-                <HmTimeSelect
-                  value={time}
-                  onChange={setTime}
-                  minHm="07:00"
-                  maxHm="21:00"
-                  aria-label="Start time"
-                />
-              </div>
-            </label>
-            <label className="block text-xs text-karsa-faint">
-              Service
-              <div className="mt-1">
-                <KarsaSelect
-                  value={serviceId}
-                  options={store.services.map((s) => ({
-                    value: s.id,
-                    label: s.name,
-                  }))}
-                  onChange={(id) => {
-                    setServiceId(id);
-                    const service = store.services.find((s) => s.id === id);
-                    if (service) setDurationMin(service.durationMin);
-                  }}
-                />
-              </div>
-            </label>
-            <label className="block text-xs text-karsa-faint">
-              Duration (minutes)
-              <input
-                type="number"
-                min={15}
-                step={15}
-                value={durationMin}
-                onChange={(e) => setDurationMin(Number(e.target.value) || 15)}
-                className="mt-1 w-full rounded-md border border-karsa-border bg-karsa-bg px-3 py-2 text-sm text-karsa-text outline-none ring-karsa-accent/40 focus:ring-2"
-              />
-            </label>
-            <label className="block text-xs text-karsa-faint">
-              Staff
-              <div className="mt-1">
-                <KarsaSelect
-                  value={employeeId}
-                  options={store.employees.map((e) => ({
-                    value: e.id,
-                    label: e.name,
-                  }))}
-                  onChange={setEmployeeId}
-                />
-              </div>
-            </label>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={save}
-                className="rounded-md bg-karsa-accent px-4 py-2 text-sm font-medium text-karsa-bg"
-              >
-                Save
-              </button>
-              <button
-                type="button"
-                onClick={() => onEditingChange(false)}
-                className="rounded-md border border-karsa-border px-4 py-2 text-sm text-karsa-muted"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        ) : (
-          <dl className="mt-6 space-y-3 border-t border-karsa-border-subtle pt-4 text-sm text-karsa-muted">
-            <div>
-              <dt className="text-xs text-karsa-faint uppercase">Client</dt>
-              <dd className="mt-1 text-karsa-text">{appt.clientName}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-karsa-faint uppercase">Service</dt>
-              <dd className="mt-1 text-karsa-text">{appt.serviceName}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-karsa-faint uppercase">Time</dt>
-              <dd className="mt-1 text-karsa-text">
-                {formatTime(appt.startIso)} – {formatTime(appt.endIso)}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-karsa-faint uppercase">Employee</dt>
-              <dd className="mt-1 text-karsa-text">{appt.employeeName}</dd>
-            </div>
-          </dl>
-        )}
-
-        <div className="mt-6 space-y-3 border-t border-karsa-border-subtle pt-4">
-          <p className="text-sm text-karsa-muted">
-            In the live app, appointment-linked forms appear here so staff can
-            open and fill Client Intake, Session Notes, and other linked forms
-            for this visit.
-          </p>
-          {linkedForms.length === 0 ? (
-            <p className="text-xs text-karsa-faint">
-              No appointment-linked forms in this demo yet.
-            </p>
-          ) : (
-            <ul className="space-y-2">
-              {linkedForms.map((f) => (
-                <li key={f.id}>
-                  <div className="inline-flex w-full items-center gap-2 rounded-md border border-karsa-border px-3 py-1.5 text-left text-sm text-karsa-text opacity-80">
-                    <span className="text-karsa-warning">○</span>
-                    {f.name}
-                    <span className="ml-auto text-[11px] text-karsa-faint">
-                      {f.audience === "staff" ? "Staff" : "Client"}
-                    </span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <div className="mt-6 flex flex-wrap gap-2">
-          {!editing ? (
-            <button
-              type="button"
-              onClick={() => onEditingChange(true)}
-              className="rounded-md border border-karsa-accent/40 px-4 py-2 text-sm font-medium text-karsa-accent-strong"
-            >
-              Edit
-            </button>
-          ) : null}
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md bg-karsa-accent px-4 py-2 text-sm font-medium text-karsa-bg"
-          >
-            Close
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              deleteAppointment(appt.id);
-              onClose();
-            }}
-            className="rounded-md border border-karsa-border px-4 py-2 text-sm text-karsa-muted hover:border-karsa-danger hover:text-karsa-danger"
-          >
-            Remove from demo
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-

@@ -9,10 +9,19 @@ export type Employee = {
   id: string;
   name: string;
   color: string;
-  role: "practitioner";
+  role: "admin" | "receptionist" | "practitioner";
+  bookable: boolean;
   serviceIds: string[];
   availability: EmployeeAvailability[];
 };
+
+export function isBookableEmployee(
+  e: Pick<Employee, "role" | "bookable">,
+): boolean {
+  if (e.role === "practitioner") return true;
+  if (e.role === "admin") return e.bookable === true;
+  return false;
+}
 
 export type Client = {
   id: string;
@@ -79,6 +88,12 @@ export type EmailTemplate = {
   active: boolean;
 };
 
+export type AppointmentStatus =
+  | "scheduled"
+  | "completed"
+  | "cancelled"
+  | "no_show";
+
 export type Appointment = {
   id: string;
   employeeId: string;
@@ -89,7 +104,32 @@ export type Appointment = {
   /** Minutes from midnight */
   startMin: number;
   durationMin: number;
+  status?: AppointmentStatus;
 };
+
+export function appointmentStatus(a: Appointment): AppointmentStatus {
+  if (a.status) return a.status;
+  return a.date < todayISO() ? "completed" : "scheduled";
+}
+
+export function showsOnCalendar(a: Appointment): boolean {
+  const status = appointmentStatus(a);
+  return status === "scheduled" || status === "completed";
+}
+
+function withAppointmentStatus(a: Appointment): Appointment {
+  if (a.status) return a;
+  let h = 0;
+  for (let i = 0; i < a.id.length; i++) {
+    h = (h + a.id.charCodeAt(i) * (i + 1)) % 11;
+  }
+  if (h === 0) return { ...a, status: "cancelled" };
+  if (h === 1) return { ...a, status: "no_show" };
+  return {
+    ...a,
+    status: a.date < todayISO() ? "completed" : "scheduled",
+  };
+}
 
 export type WaitlistEntry = {
   id: string;
@@ -511,7 +551,7 @@ function addDaysISO(iso: string, days: number) {
 }
 
 function currentMonthKey(d = new Date()) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-m2`;
 }
 
 function toYmd(d: Date) {
@@ -528,9 +568,17 @@ function startOfWeekSunday(d: Date) {
   return x;
 }
 
+function statusForSeed(date: Date, si: number, day: number): AppointmentStatus {
+  const mix = (day + si * 3 + date.getMonth() * 5) % 11;
+  if (mix === 0) return "cancelled";
+  if (mix === 1) return "no_show";
+  if (toYmd(date) < todayISO()) return "completed";
+  return "scheduled";
+}
+
 /**
- * Fill only the visitor’s current calendar month (denser in the current week).
- * Other months stay empty so the demo never looks permanently packed.
+ * Seed the current month densely (for calendar) plus a thinner 12-month
+ * history so Insights metrics ranges have real volume to chart.
  */
 function buildCurrentMonthAppointments(
   employees: Employee[],
@@ -540,9 +588,6 @@ function buildCurrentMonthAppointments(
   if (!employees.length || !clients.length || !services.length) return [];
 
   const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
   const weekStart = startOfWeekSunday(now);
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekEnd.getDate() + 7);
@@ -554,37 +599,52 @@ function buildCurrentMonthAppointments(
   const out: Appointment[] = [];
   let n = 0;
 
-  for (let day = 1; day <= daysInMonth; day++) {
-    const date = new Date(year, month, day);
-    const dow = date.getDay();
-    if (dow === 0) continue; // Sunday closed
+  for (let monthOffset = -11; monthOffset <= 0; monthOffset++) {
+    const cursor = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
+    const year = cursor.getFullYear();
+    const month = cursor.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const isCurrent = monthOffset === 0;
 
-    const inCurrentWeek = date >= weekStart && date < weekEnd;
-    const slots = inCurrentWeek
-      ? denseSlots
-      : dow === 6
-        ? saturdaySlots
-        : lightSlots;
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(year, month, day);
+      const dow = date.getDay();
+      if (dow === 0) continue;
 
-    for (let si = 0; si < slots.length; si++) {
-      const emp = employees[(day + si) % employees.length]!;
-      const svcPick = services[(day + si * 2) % services.length]!;
-      const serviceId = emp.serviceIds.includes(svcPick.id)
-        ? svcPick.id
-        : emp.serviceIds[0] ?? svcPick.id;
-      const service =
-        services.find((s) => s.id === serviceId) ?? svcPick;
-      const client = clients[(day + si * 3) % clients.length]!;
+      let slots: number[];
+      if (isCurrent) {
+        const inCurrentWeek = date >= weekStart && date < weekEnd;
+        slots = inCurrentWeek
+          ? denseSlots
+          : dow === 6
+            ? saturdaySlots
+            : lightSlots;
+      } else {
+        if (dow === 6 && day % 2 === 0) continue;
+        if (day % 3 === 0) continue;
+        slots = dow === 6 ? saturdaySlots : lightSlots;
+      }
 
-      out.push({
-        id: `a-seed-${++n}`,
-        employeeId: emp.id,
-        clientId: client.id,
-        serviceId: service.id,
-        date: toYmd(date),
-        startMin: slots[si]!,
-        durationMin: service.durationMin,
-      });
+      for (let si = 0; si < slots.length; si++) {
+        const emp = employees[(day + si) % employees.length]!;
+        const svcPick = services[(day + si * 2) % services.length]!;
+        const serviceId = emp.serviceIds.includes(svcPick.id)
+          ? svcPick.id
+          : emp.serviceIds[0] ?? svcPick.id;
+        const service = services.find((s) => s.id === serviceId) ?? svcPick;
+        const client = clients[(day + si * 3) % clients.length]!;
+
+        out.push({
+          id: `a-seed-${++n}`,
+          employeeId: emp.id,
+          clientId: client.id,
+          serviceId: service.id,
+          date: toYmd(date),
+          startMin: slots[si]!,
+          durationMin: service.durationMin,
+          status: statusForSeed(date, si, day),
+        });
+      }
     }
   }
 
@@ -799,6 +859,7 @@ export function createSeedState(): DemoState {
       name: "Alex Rivera",
       color: "#9aaf9d",
       role: "practitioner",
+      bookable: true,
       serviceIds: [...allServiceIds],
       availability: weekHours.map((row) => ({ ...row })),
     },
@@ -807,6 +868,7 @@ export function createSeedState(): DemoState {
       name: "Jordan Lee",
       color: "#688086",
       role: "practitioner",
+      bookable: true,
       serviceIds: [...allServiceIds],
       availability: weekHours.map((row) => ({ ...row })),
     },
@@ -815,6 +877,7 @@ export function createSeedState(): DemoState {
       name: "Sam Patel",
       color: "#b08d7a",
       role: "practitioner",
+      bookable: true,
       serviceIds: ["s1", "s2", "s3"],
       availability: weekHours.map((row) => ({ ...row })),
     },
@@ -823,6 +886,7 @@ export function createSeedState(): DemoState {
       name: "Riley Quinn",
       color: "#7a8fb0",
       role: "practitioner",
+      bookable: true,
       serviceIds: ["s2", "s3", "s4"],
       availability: weekHours.map((row) => ({ ...row })),
     },
@@ -1238,11 +1302,20 @@ function normalizeEmployee(
       ? seedFallback.serviceIds
       : defaultServiceIds;
 
+  const role: Employee["role"] =
+    raw.role === "admin" || raw.role === "receptionist"
+      ? raw.role
+      : "practitioner";
+
   return {
     id: raw.id ?? seedFallback?.id ?? uid("emp"),
     name: raw.name ?? seedFallback?.name ?? "Staff",
     color: raw.color ?? seedFallback?.color ?? "#9aaf9d",
-    role: "practitioner",
+    role,
+    bookable:
+      typeof raw.bookable === "boolean"
+        ? raw.bookable
+        : role === "practitioner",
     serviceIds,
     availability,
   };
@@ -1307,7 +1380,7 @@ function normalizeState(raw: Partial<DemoState> | null | undefined): DemoState {
     locations,
     emailTemplates,
     appointments: Array.isArray(raw.appointments)
-      ? raw.appointments
+      ? (raw.appointments as Appointment[]).map(withAppointmentStatus)
       : seed.appointments,
     waitlistEntries: Array.isArray(raw.waitlistEntries)
       ? raw.waitlistEntries
@@ -1450,6 +1523,28 @@ export function setEmployeeAvailability(
     ...state,
     employees: state.employees.map((e) =>
       e.id === employeeId ? { ...e, availability: normalized } : e,
+    ),
+  };
+  persist();
+}
+
+export function setEmployeeRole(
+  employeeId: string,
+  role: Employee["role"],
+  bookable?: boolean,
+) {
+  const nextBookable =
+    role === "practitioner"
+      ? true
+      : role === "admin"
+        ? bookable === true
+        : false;
+  state = {
+    ...state,
+    employees: state.employees.map((e) =>
+      e.id === employeeId
+        ? { ...e, role, bookable: nextBookable }
+        : e,
     ),
   };
   persist();

@@ -1,16 +1,23 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { CalendarBookModal } from "../components/calendar/CalendarBookModal";
 import { ConfirmationEditor } from "../components/ConfirmationEditor";
+import { EntityOpenButton, useEntityModals } from "../components/EntityModals";
 import { HmTimeSelect } from "../components/inputs/HmTimeSelect";
+import { KarsaToggleSwitch } from "../components/karsa-toggle-switch";
 import { RoleSelect } from "../components/RoleSelect";
 import {
+  appointmentStatus,
   clientDisplayName,
   formatClock,
   formatServiceOptionLabel,
   setEmployeeAvailability,
+  setEmployeeRole,
   setEmployeeServices,
   todayISO,
   updateClient,
+  upsertAppointment,
+  type Employee,
   type EmployeeAvailability,
 } from "../lib/store";
 import { useDemoStore } from "../lib/use-demo-store";
@@ -46,6 +53,55 @@ function UnavailableEdge({
     >
       Unavailable
     </button>
+  );
+}
+
+function ClientBookButton({ clientId }: { clientId: string }) {
+  const { employees, clients, services } = useDemoStore();
+  const { openAppointment } = useEntityModals();
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="shrink-0 rounded-md bg-karsa-accent px-4 py-2 text-sm font-medium text-karsa-bg transition-colors hover:bg-karsa-accent-strong"
+      >
+        Make a booking for this client
+      </button>
+      {open ? (
+        <CalendarBookModal
+          defaults={{
+            date: todayISO(),
+            time: "09:00",
+            employeeId: null,
+          }}
+          lockedClientId={clientId}
+          employees={employees}
+          clients={clients}
+          services={services}
+          onClose={() => setOpen(false)}
+          onSave={(form) => {
+            const [hh, mm] = form.time.split(":").map(Number);
+            const startMin = (hh || 0) * 60 + (mm || 0);
+            const id = crypto.randomUUID();
+            upsertAppointment({
+              id,
+              employeeId: form.employeeId,
+              clientId: form.clientId,
+              serviceId: form.serviceId,
+              date: form.date,
+              startMin,
+              durationMin: form.durationMin,
+              status: "scheduled",
+            });
+            setOpen(false);
+            openAppointment(id);
+          }}
+        />
+      ) : null}
+    </>
   );
 }
 
@@ -89,7 +145,10 @@ export function ClientProfilePage() {
   }
 
   const appts = [...appointments]
-    .filter((a) => a.clientId === client.id)
+    .filter(
+      (a) =>
+        a.clientId === client.id && appointmentStatus(a) !== "cancelled",
+    )
     .sort((a, b) =>
       a.date === b.date ? b.startMin - a.startMin : b.date.localeCompare(a.date),
     );
@@ -126,12 +185,7 @@ export function ClientProfilePage() {
             from here; new appointments also show on the Calendar.
           </p>
         </div>
-        <Link
-          to={`/dashboard/bookings/new?clientId=${client.id}`}
-          className="shrink-0 rounded-md bg-karsa-accent px-4 py-2 text-sm font-medium text-karsa-bg transition-colors hover:bg-karsa-accent-strong"
-        >
-          Make a booking for this client
-        </Link>
+        <ClientBookButton clientId={client.id} />
       </div>
 
       <section className="mt-8 border border-karsa-border-subtle p-4">
@@ -290,18 +344,21 @@ export function ClientProfilePage() {
               {appts.map((a) => {
                 const svc = services.find((s) => s.id === a.serviceId);
                 return (
-                  <li
-                    key={a.id}
-                    className="border border-karsa-border-subtle px-3 py-2 text-sm"
-                  >
-                    <span className="text-karsa-text">
-                      {shortDate(a.date)}
-                      {svc ? ` · ${svc.name}` : ""}
-                    </span>
-                    <span className="mt-0.5 block text-xs text-karsa-muted">
-                      {formatClock(a.startMin)}
-                      {a.date >= today ? " · upcoming" : ""}
-                    </span>
+                  <li key={a.id}>
+                    <EntityOpenButton
+                      kind="appointment"
+                      id={a.id}
+                      className="block w-full border border-karsa-border-subtle px-3 py-2 text-left text-sm transition-colors hover:border-karsa-accent"
+                    >
+                      <span className="text-karsa-text">
+                        {shortDate(a.date)}
+                        {svc ? ` · ${svc.name}` : ""}
+                      </span>
+                      <span className="mt-0.5 block text-xs text-karsa-muted">
+                        {formatClock(a.startMin)}
+                        {a.date >= today ? " · upcoming" : ""}
+                      </span>
+                    </EntityOpenButton>
                   </li>
                 );
               })}
@@ -353,7 +410,10 @@ export function EmployeeProfilePage() {
 
   const [availability, setAvailability] = useState<EmployeeAvailability[]>([]);
   const [serviceIds, setServiceIds] = useState<string[]>([]);
-  const [role, setRole] = useState("practitioner");
+  const [role, setRole] = useState<Employee["role"]>(
+    employee?.role ?? "practitioner",
+  );
+  const [bookable, setBookable] = useState(employee?.bookable ?? true);
   const [hoursSaved, setHoursSaved] = useState(false);
   const [servicesSaved, setServicesSaved] = useState(false);
 
@@ -361,6 +421,8 @@ export function EmployeeProfilePage() {
     if (!employee) return;
     setAvailability(employee.availability.map((row) => ({ ...row })));
     setServiceIds([...employee.serviceIds]);
+    setRole(employee.role);
+    setBookable(employee.bookable);
     setHoursSaved(false);
     setServicesSaved(false);
   }, [employee]);
@@ -441,9 +503,35 @@ export function EmployeeProfilePage() {
             Role
             <RoleSelect
               value={role}
-              onChange={setRole}
+              onChange={(next) => {
+                const nextRole = next as Employee["role"];
+                const nextBookable = nextRole === "practitioner";
+                setRole(nextRole);
+                setBookable(nextBookable);
+                setEmployeeRole(employee.id, nextRole, nextBookable);
+              }}
               className="mt-1 w-full rounded-md border border-karsa-border bg-karsa-bg px-3 py-2 text-sm text-karsa-text outline-none ring-karsa-accent/40 focus:ring-2"
             />
+            {role === "admin" ? (
+              <div className="mt-2 flex items-center justify-between gap-3 rounded-md border border-karsa-border px-3 py-2">
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-karsa-text">
+                    Bookable practitioner
+                  </p>
+                  <p className="mt-0.5 text-[11px] leading-snug text-karsa-faint">
+                    Include this admin in Book Now and practitioner pickers.
+                  </p>
+                </div>
+                <KarsaToggleSwitch
+                  checked={bookable}
+                  onChange={(on) => {
+                    setBookable(on);
+                    setEmployeeRole(employee.id, "admin", on);
+                  }}
+                  ariaLabel="Bookable practitioner"
+                />
+              </div>
+            ) : null}
           </label>
         </div>
       </section>

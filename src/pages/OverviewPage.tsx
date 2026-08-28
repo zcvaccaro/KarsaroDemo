@@ -2,13 +2,14 @@ import { useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { OverviewMiniCalendar } from "../components/OverviewMiniCalendar";
 import { QuickActionsGrid } from "../components/QuickActionsGrid";
+import { EntityOpenButton } from "../components/EntityModals";
 import {
   formatYmd,
   weekStartParam,
   type CalendarAppointment,
 } from "../lib/calendar-utils";
 import { useDemoStore } from "../lib/use-demo-store";
-import { clientDisplayName, type Appointment } from "../lib/store";
+import { clientDisplayName, showsOnCalendar, type Appointment } from "../lib/store";
 
 function toLocalIso(date: Date): string {
   const ymd = formatYmd(date);
@@ -52,6 +53,7 @@ export function OverviewPage() {
 
   const weekAppointments = useMemo(() => {
     return state.appointments
+      .filter(showsOnCalendar)
       .map((a) => {
         const client = state.clients.find((c) => c.id === a.clientId);
         const service = state.services.find((s) => s.id === a.serviceId);
@@ -69,6 +71,7 @@ export function OverviewPage() {
   const upcomingRows = useMemo(() => {
     const nowMs = Date.now();
     return state.appointments
+      .filter(showsOnCalendar)
       .map((a) => {
         const client = state.clients.find((c) => c.id === a.clientId);
         const service = state.services.find((s) => s.id === a.serviceId);
@@ -180,9 +183,10 @@ export function OverviewPage() {
               {upcomingRows.map((row) => {
                 return (
                   <li key={row.id}>
-                    <Link
-                      to={`/dashboard/calendar`}
-                      className="flex cursor-pointer items-baseline justify-between gap-3 py-3 text-sm text-karsa-text transition-colors hover:text-karsa-accent-strong"
+                    <EntityOpenButton
+                      kind="appointment"
+                      id={row.id}
+                      className="flex w-full cursor-pointer items-baseline justify-between gap-3 py-3 text-left text-sm text-karsa-text transition-colors hover:text-karsa-accent-strong"
                     >
                       <span className="min-w-0 truncate">
                         {row.clientName}
@@ -200,7 +204,7 @@ export function OverviewPage() {
                           minute: "2-digit",
                         })}
                       </span>
-                    </Link>
+                    </EntityOpenButton>
                   </li>
                 );
               })}
@@ -220,9 +224,10 @@ export function OverviewPage() {
                   : null;
                 return (
                   <li key={row.id}>
-                    <Link
-                      to={`/dashboard/waitlist/${row.id}`}
-                      className="flex cursor-pointer items-baseline justify-between gap-3 py-3 text-sm text-karsa-text transition-colors hover:text-karsa-accent-strong"
+                    <EntityOpenButton
+                      kind="waitlist"
+                      id={row.id}
+                      className="flex w-full cursor-pointer items-baseline justify-between gap-3 py-3 text-left text-sm text-karsa-text transition-colors hover:text-karsa-accent-strong"
                     >
                       <span className="min-w-0 truncate">
                         {row.clientName}
@@ -234,7 +239,7 @@ export function OverviewPage() {
                       <span className="shrink-0 text-xs text-karsa-muted">
                         {pref ?? "No date"}
                       </span>
-                    </Link>
+                    </EntityOpenButton>
                   </li>
                 );
               })}

@@ -5,6 +5,7 @@ import { demoNav, isNavActive } from "../lib/nav";
 import { orderQuickActions } from "../lib/quick-actions";
 import { resetDemoState } from "../lib/store";
 import { useDemoStore } from "../lib/use-demo-store";
+import { EntityModalsProvider } from "./EntityModals";
 
 const CHIP_LABEL: Record<string, string> = {
   "/dashboard/calendar": "Calendar",
@@ -221,7 +222,9 @@ export function ShellLayout() {
 
         <main className="flex-1 px-5 py-8 md:px-10 md:py-10">
           <HistoryNav />
-          <Outlet />
+          <EntityModalsProvider>
+            <Outlet />
+          </EntityModalsProvider>
         </main>
       </div>
     </div>

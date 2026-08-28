@@ -84,6 +84,22 @@ body {
   animation: quick-action-nudge-right 0.55s ease-in-out infinite;
 }
 
+/* Light hover so every control reads as clickable */
+button:not(:disabled),
+input[type="submit"]:not(:disabled),
+input[type="button"]:not(:disabled) {
+  transition:
+    filter 0.15s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+button:not(:disabled):hover,
+input[type="submit"]:not(:disabled):hover,
+input[type="button"]:not(:disabled):hover {
+  filter: brightness(1.14);
+}
+
 /* Booking-flow horizontal strip — thin green bar when overflowing */
 .karsa-h-scroll {
   overflow-x: auto;

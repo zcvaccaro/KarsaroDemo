@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
+import { DateInput } from "../inputs/DateInput";
+import { HmTimeSelect } from "../inputs/HmTimeSelect";
 import { KarsaSelect } from "../inputs/KarsaSelect";
 import { formatHm12 } from "../../lib/format-hm";
 import {
   clientDisplayName,
+  isBookableEmployee,
   upsertClient,
   type Client,
   type Employee,
@@ -25,31 +28,47 @@ export function CalendarBookModal({
   services,
   onClose,
   onSave,
+  lockedClientId,
 }: {
   defaults: BookModalDefaults;
   employees: Employee[];
   clients: Client[];
   services: Service[];
   onClose: () => void;
+  lockedClientId?: string;
   onSave: (form: {
     clientId: string;
     serviceId: string;
     employeeId: string;
     durationMin: number;
+    date: string;
+    time: string;
   }) => void;
 }) {
   const [mode, setMode] = useState<"lookup" | "new">("lookup");
   const [query, setQuery] = useState("");
-  const [clientId, setClientId] = useState(clients[0]?.id ?? "");
+  const [clientId, setClientId] = useState(
+    lockedClientId ?? clients[0]?.id ?? "",
+  );
+  const [date, setDate] = useState(defaults.date);
+  const [time, setTime] = useState(defaults.time);
   const [serviceId, setServiceId] = useState(services[0]?.id ?? "");
   const [employeeId, setEmployeeId] = useState(
-    defaults.employeeId ?? employees[0]?.id ?? "",
+    defaults.employeeId &&
+      employees.some(
+        (e) => e.id === defaults.employeeId && isBookableEmployee(e),
+      )
+      ? defaults.employeeId
+      : (employees.find(isBookableEmployee)?.id ?? ""),
   );
   const [newFirst, setNewFirst] = useState("");
   const [newLast, setNewLast] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newPhone, setNewPhone] = useState("");
 
+  const lockedClient = lockedClientId
+    ? clients.find((c) => c.id === lockedClientId)
+    : undefined;
   const service = services.find((s) => s.id === serviceId);
 
   const lookupResults = useMemo(() => {
@@ -71,7 +90,7 @@ export function CalendarBookModal({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const employeeOptions = employees.map((e) => ({
+  const employeeOptions = employees.filter(isBookableEmployee).map((e) => ({
     value: e.id,
     label: e.name,
   }));
@@ -81,6 +100,7 @@ export function CalendarBookModal({
   }));
 
   function resolveClientId(): string | null {
+    if (lockedClientId) return lockedClientId;
     if (mode === "lookup") {
       return clientId || null;
     }
@@ -119,7 +139,9 @@ export function CalendarBookModal({
               Book an appointment
             </h2>
             <p className="mt-1 text-sm text-karsa-muted">
-              {defaults.date} · around {formatHm12(defaults.time)}
+              {lockedClient
+                ? clientDisplayName(lockedClient)
+                : `${date} · around ${formatHm12(time)}`}
             </p>
           </div>
           <button
@@ -132,6 +154,8 @@ export function CalendarBookModal({
         </div>
 
         <div className="mt-6 space-y-4">
+          {!lockedClientId ? (
+          <>
           <div className="flex gap-2">
             <button
               type="button"
@@ -233,6 +257,27 @@ export function CalendarBookModal({
               </div>
             </div>
           )}
+          </>
+          ) : null}
+
+          <label className="block text-xs text-karsa-faint">
+            Date
+            <div className="mt-1">
+              <DateInput value={date} onChange={setDate} />
+            </div>
+          </label>
+          <label className="block text-xs text-karsa-faint">
+            Time
+            <div className="mt-1">
+              <HmTimeSelect
+                value={time}
+                onChange={setTime}
+                minHm="07:00"
+                maxHm="21:00"
+                aria-label="Start time"
+              />
+            </div>
+          </label>
 
           <label className="block text-xs text-karsa-faint">
             Practitioner
@@ -276,6 +321,8 @@ export function CalendarBookModal({
                 serviceId,
                 employeeId,
                 durationMin: service?.durationMin ?? 60,
+                date,
+                time,
               });
             }}
             className="rounded-md bg-karsa-accent px-3 py-1.5 text-sm font-medium text-karsa-bg"
