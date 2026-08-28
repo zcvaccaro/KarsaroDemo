@@ -294,7 +294,7 @@ export function sectionsForTemplate(templateKey: string): FormSection[] {
     case "booking":
       return withLegal(
         [
-          mk("contact", "Contact information", { locked: true }),
+          mk("contact", "Personal Information", { locked: true }),
           mk("scheduling", "Service & appointment time", {
             locked: true,
             description:
@@ -332,7 +332,7 @@ export function sectionsForTemplate(templateKey: string): FormSection[] {
     case "waitlist":
       return withLegal(
         [
-          mk("contact", "Contact information", { locked: true }),
+          mk("contact", "Personal Information", { locked: true }),
           mk("service_selection", "Service selection", { locked: true }),
           mk("requested_times", "Requested appointment times", {
             locked: true,

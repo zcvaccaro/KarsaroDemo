@@ -53,6 +53,11 @@ import {
   type CalendarGridBounds,
   type CalendarLocationHour,
 } from "../lib/calendar-utils";
+import { CalendarPeriodControls } from "../components/CalendarPeriodControls";
+import { DateInput } from "../components/inputs/DateInput";
+import { HmTimeSelect } from "../components/inputs/HmTimeSelect";
+import { KarsaSelect } from "../components/inputs/KarsaSelect";
+import { bindCalendarDragPointer, lockPageScrollForDrag } from "../lib/long-press-drag";
 import { DEFAULT_SERVICE_COLOR_ID } from "../lib/service-colors";
 import {
   clientDisplayName,
@@ -60,6 +65,7 @@ import {
   upsertAppointment,
   type Appointment,
   type Client,
+  type DemoState,
   type Employee,
   type WaitlistEntry,
 } from "../lib/store";
@@ -514,6 +520,7 @@ function WeekView({
 
   useEffect(() => {
     if (!drag) return;
+    const unlock = lockPageScrollForDrag();
     function onMove(e: PointerEvent) {
       onGridPointerMove(e);
     }
@@ -523,6 +530,7 @@ function WeekView({
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
     return () => {
+      unlock();
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
     };
@@ -603,14 +611,18 @@ function WeekView({
                   suppressNav={() => Date.now() < ignoreClickUntil.current}
                   onOpenAppointment={onOpenAppointment}
                   onAppointmentPointerDown={(appt, e) =>
-                    beginDrag(appt, columnIndex, e, "move")
+                    bindCalendarDragPointer(e, (ev) =>
+                      beginDrag(appt, columnIndex, ev, "move"),
+                    )
                   }
                   onAppointmentResizePointerDown={(appt, edge, e) =>
-                    beginDrag(
-                      appt,
-                      columnIndex,
-                      e,
-                      edge === "start" ? "resize-start" : "resize-end",
+                    bindCalendarDragPointer(e, (ev) =>
+                      beginDrag(
+                        appt,
+                        columnIndex,
+                        ev,
+                        edge === "start" ? "resize-start" : "resize-end",
+                      ),
                     )
                   }
                   gridHandlers={{
@@ -899,6 +911,7 @@ function DayView({
 
   useEffect(() => {
     if (!drag) return;
+    const unlock = lockPageScrollForDrag();
     function onMove(e: PointerEvent) {
       onGridPointerMove(e);
     }
@@ -908,6 +921,7 @@ function DayView({
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
     return () => {
+      unlock();
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
     };
@@ -962,12 +976,16 @@ function DayView({
             dragApptId={drag?.appt.id}
             suppressNav={() => Date.now() < ignoreClickUntil.current}
             onOpenAppointment={onOpenAppointment}
-            onAppointmentPointerDown={(appt, e) => beginDrag(appt, e, "move")}
+            onAppointmentPointerDown={(appt, e) =>
+              bindCalendarDragPointer(e, (ev) => beginDrag(appt, ev, "move"))
+            }
             onAppointmentResizePointerDown={(appt, edge, e) =>
-              beginDrag(
-                appt,
-                e,
-                edge === "start" ? "resize-start" : "resize-end",
+              bindCalendarDragPointer(e, (ev) =>
+                beginDrag(
+                  appt,
+                  ev,
+                  edge === "start" ? "resize-start" : "resize-end",
+                ),
               )
             }
             gridHandlers={{
@@ -1084,6 +1102,7 @@ function MonthView({
           const today = isToday(day);
           const closed = isDayFullyClosed(locationHours, day, hoursMode);
           const shown = Math.min(2, dayAppts.length);
+          const dayWait = waitlistForDay(waitlist, day);
 
           return (
             <button
@@ -1098,15 +1117,22 @@ function MonthView({
                     : ""
               }`}
             >
-              <span
-                className={`inline-flex size-7 shrink-0 items-center justify-center rounded-full text-sm ${
-                  today && !closed
-                    ? "bg-karsa-accent font-medium text-karsa-bg"
-                    : "text-karsa-text"
-                }`}
-              >
-                {day.getDate()}
-              </span>
+              <div className="flex flex-col items-stretch gap-0.5 md:flex-row md:items-center md:gap-1">
+                {dayWait.length > 0 ? (
+                  <div className="order-1 md:order-2 md:min-w-0">
+                    <DayWaitlistDropdown items={dayWait} compact />
+                  </div>
+                ) : null}
+                <span
+                  className={`order-2 inline-flex size-7 shrink-0 items-center justify-center rounded-full text-sm md:order-1 ${
+                    today && !closed
+                      ? "bg-karsa-accent font-medium text-karsa-bg"
+                      : "text-karsa-text"
+                  }`}
+                >
+                  {day.getDate()}
+                </span>
+              </div>
               {closed ? (
                 <p className="mt-1 text-[10px] text-karsa-text/85">Closed</p>
               ) : null}
@@ -1127,10 +1153,6 @@ function MonthView({
                   ) : null}
                 </div>
               ) : null}
-              <DayWaitlistDropdown
-                items={waitlistForDay(waitlist, day)}
-                compact
-              />
             </button>
           );
         })}
@@ -1214,6 +1236,7 @@ export function CalendarPage() {
   const [detailAppt, setDetailAppt] = useState<CalendarAppointment | null>(
     null,
   );
+  const [detailEditing, setDetailEditing] = useState(false);
 
   const weekStart = useMemo(() => startOfWeek(anchor), [anchor]);
   const monthStart = useMemo(() => startOfMonth(anchor), [anchor]);
@@ -1277,6 +1300,7 @@ export function CalendarPage() {
   );
 
   function onOpenAppointment(appt: CalendarAppointment) {
+    setDetailEditing(false);
     setDetailAppt(appt);
   }
 
@@ -1302,48 +1326,16 @@ export function CalendarPage() {
         schedule here shows up on Overview and on that client&apos;s profile.
       </p>
 
-      <div className="mt-6 flex flex-wrap items-center gap-2">
-        {(["week", "day", "month"] as const).map((v) => (
-          <Link
-            key={v}
-            to={buildHref({
-              view: v,
-              date: anchorYmd,
-              employeeId,
-            })}
-            className={`rounded-md px-3 py-1.5 text-sm capitalize ${
-              view === v
-                ? "bg-karsa-accent text-karsa-bg"
-                : "border border-karsa-border text-karsa-muted hover:bg-karsa-surface"
-            }`}
-          >
-            {v}
-          </Link>
-        ))}
-        <div className="mx-1 hidden h-5 w-px bg-karsa-border sm:block" />
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="rounded-md border border-karsa-border px-3 py-1.5 text-sm text-karsa-muted hover:bg-karsa-surface"
-        >
-          Previous
-        </button>
-        <button
-          type="button"
-          onClick={goToday}
-          className="rounded-md border border-karsa-border px-3 py-1.5 text-sm text-karsa-muted hover:bg-karsa-surface"
-        >
-          Today
-        </button>
-        <button
-          type="button"
-          onClick={() => navigate(1)}
-          className="rounded-md border border-karsa-border px-3 py-1.5 text-sm text-karsa-muted hover:bg-karsa-surface"
-        >
-          Next
-        </button>
-        <p className="ml-1 text-sm font-medium text-karsa-text">{title}</p>
-      </div>
+      <CalendarPeriodControls
+        view={view}
+        onViewChange={(next) =>
+          pushParams({ view: next })
+        }
+        title={title}
+        onPrev={() => navigate(-1)}
+        onNext={() => navigate(1)}
+        onToday={goToday}
+      />
 
       <div className="mt-4 flex flex-wrap gap-2">
         <Link
@@ -1447,112 +1439,270 @@ export function CalendarPage() {
       ) : null}
 
       {detailAppt ? (
-        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/55 p-4 py-10">
-          <div
-            className="absolute inset-0"
-            onClick={() => setDetailAppt(null)}
-            role="presentation"
-          />
-          <div
-            className="relative z-10 w-full max-w-lg rounded-lg border border-karsa-border bg-karsa-bg p-6 shadow-lg"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="appt-detail-title"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-xs font-medium tracking-[0.16em] text-karsa-faint uppercase">
-                  Details
-                </p>
-                <h2
-                  id="appt-detail-title"
-                  className="mt-1 font-display text-2xl text-karsa-text"
-                >
-                  Appointment
-                </h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => setDetailAppt(null)}
-                className="rounded-md border border-karsa-border px-3 py-1.5 text-sm text-karsa-muted hover:bg-karsa-surface"
-              >
-                Close
-              </button>
-            </div>
-
-            <dl className="mt-6 space-y-3 border-t border-karsa-border-subtle pt-4 text-sm text-karsa-muted">
-              <div>
-                <dt className="text-xs text-karsa-faint uppercase">Client</dt>
-                <dd className="mt-1 text-karsa-text">{detailAppt.clientName}</dd>
-              </div>
-              <div>
-                <dt className="text-xs text-karsa-faint uppercase">Service</dt>
-                <dd className="mt-1 text-karsa-text">{detailAppt.serviceName}</dd>
-              </div>
-              <div>
-                <dt className="text-xs text-karsa-faint uppercase">Time</dt>
-                <dd className="mt-1 text-karsa-text">
-                  {formatTime(detailAppt.startIso)} –{" "}
-                  {formatTime(detailAppt.endIso)}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-xs text-karsa-faint uppercase">Employee</dt>
-                <dd className="mt-1 text-karsa-text">
-                  {detailAppt.employeeName}
-                </dd>
-              </div>
-            </dl>
-
-            <div className="mt-6 space-y-3 border-t border-karsa-border-subtle pt-4">
-              <p className="text-sm text-karsa-muted">
-                In the live app, appointment-linked forms appear here so staff
-                can open and fill Client Intake, Session Notes, and other linked
-                forms for this visit.
-              </p>
-              {linkedForms.length === 0 ? (
-                <p className="text-xs text-karsa-faint">
-                  No appointment-linked forms in this demo yet.
-                </p>
-              ) : (
-                <ul className="space-y-2">
-                  {linkedForms.map((f) => (
-                    <li key={f.id}>
-                      <div className="inline-flex w-full items-center gap-2 rounded-md border border-karsa-border px-3 py-1.5 text-left text-sm text-karsa-text opacity-80">
-                        <span className="text-karsa-warning">○</span>
-                        {f.name}
-                        <span className="ml-auto text-[11px] text-karsa-faint">
-                          {f.audience === "staff" ? "Staff" : "Client"}
-                        </span>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
-            <div className="mt-6 flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => setDetailAppt(null)}
-                className="rounded-md bg-karsa-accent px-4 py-2 text-sm font-medium text-karsa-bg"
-              >
-                Close
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  deleteAppointment(detailAppt.id);
-                  setDetailAppt(null);
-                }}
-                className="rounded-md border border-karsa-border px-4 py-2 text-sm text-karsa-muted hover:border-karsa-danger hover:text-karsa-danger"
-              >
-                Remove from demo
-              </button>
-            </div>
-          </div>
-        </div>
+        <DemoAppointmentDetail
+          appt={detailAppt}
+          editing={detailEditing}
+          onEditingChange={setDetailEditing}
+          store={state}
+          linkedForms={linkedForms}
+          onClose={() => {
+            setDetailEditing(false);
+            setDetailAppt(null);
+          }}
+        />
       ) : null}
     </div>
   );
 }
+
+function minToHm(min: number) {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+function hmToMin(hm: string) {
+  const [h, m] = hm.split(":").map(Number);
+  return (h || 0) * 60 + (m || 0);
+}
+
+function DemoAppointmentDetail({
+  appt,
+  editing,
+  onEditingChange,
+  store,
+  linkedForms,
+  onClose,
+}: {
+  appt: CalendarAppointment;
+  editing: boolean;
+  onEditingChange: (v: boolean) => void;
+  store: DemoState;
+  linkedForms: { id: string; name: string; audience: string }[];
+  onClose: () => void;
+}) {
+  const row = store.appointments.find((a) => a.id === appt.id);
+  const [date, setDate] = useState(row?.date ?? "");
+  const [time, setTime] = useState(minToHm(row?.startMin ?? 0));
+  const [durationMin, setDurationMin] = useState(row?.durationMin ?? 60);
+  const [serviceId, setServiceId] = useState(row?.serviceId ?? "");
+  const [employeeId, setEmployeeId] = useState(row?.employeeId ?? "");
+
+  useEffect(() => {
+    const next = store.appointments.find((a) => a.id === appt.id);
+    setDate(next?.date ?? "");
+    setTime(minToHm(next?.startMin ?? 0));
+    setDurationMin(next?.durationMin ?? 60);
+    setServiceId(next?.serviceId ?? "");
+    setEmployeeId(next?.employeeId ?? "");
+  }, [appt.id, store.appointments, editing]);
+
+  function save() {
+    if (!row) return;
+    upsertAppointment({
+      ...row,
+      date,
+      startMin: hmToMin(time),
+      serviceId,
+      employeeId,
+      durationMin: Math.max(15, durationMin || row.durationMin),
+    });
+    onEditingChange(false);
+    onClose();
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/55 p-4 py-10">
+      <div
+        className="absolute inset-0"
+        onClick={onClose}
+        role="presentation"
+      />
+      <div
+        className="relative z-10 w-full max-w-lg rounded-lg border border-karsa-border bg-karsa-bg p-6 shadow-lg"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="appt-detail-title"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-medium tracking-[0.16em] text-karsa-faint uppercase">
+              Details
+            </p>
+            <h2
+              id="appt-detail-title"
+              className="mt-1 font-display text-2xl text-karsa-text"
+            >
+              Appointment
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md border border-karsa-border px-3 py-1.5 text-sm text-karsa-muted hover:bg-karsa-surface"
+          >
+            Close
+          </button>
+        </div>
+
+        {editing && row ? (
+          <div className="mt-6 space-y-4 border-t border-karsa-border-subtle pt-4">
+            <label className="block text-xs text-karsa-faint">
+              Date
+              <div className="mt-1">
+                <DateInput value={date} onChange={setDate} />
+              </div>
+            </label>
+            <label className="block text-xs text-karsa-faint">
+              Time
+              <div className="mt-1">
+                <HmTimeSelect
+                  value={time}
+                  onChange={setTime}
+                  minHm="07:00"
+                  maxHm="21:00"
+                  aria-label="Start time"
+                />
+              </div>
+            </label>
+            <label className="block text-xs text-karsa-faint">
+              Service
+              <div className="mt-1">
+                <KarsaSelect
+                  value={serviceId}
+                  options={store.services.map((s) => ({
+                    value: s.id,
+                    label: s.name,
+                  }))}
+                  onChange={(id) => {
+                    setServiceId(id);
+                    const service = store.services.find((s) => s.id === id);
+                    if (service) setDurationMin(service.durationMin);
+                  }}
+                />
+              </div>
+            </label>
+            <label className="block text-xs text-karsa-faint">
+              Duration (minutes)
+              <input
+                type="number"
+                min={15}
+                step={15}
+                value={durationMin}
+                onChange={(e) => setDurationMin(Number(e.target.value) || 15)}
+                className="mt-1 w-full rounded-md border border-karsa-border bg-karsa-bg px-3 py-2 text-sm text-karsa-text outline-none ring-karsa-accent/40 focus:ring-2"
+              />
+            </label>
+            <label className="block text-xs text-karsa-faint">
+              Staff
+              <div className="mt-1">
+                <KarsaSelect
+                  value={employeeId}
+                  options={store.employees.map((e) => ({
+                    value: e.id,
+                    label: e.name,
+                  }))}
+                  onChange={setEmployeeId}
+                />
+              </div>
+            </label>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={save}
+                className="rounded-md bg-karsa-accent px-4 py-2 text-sm font-medium text-karsa-bg"
+              >
+                Save
+              </button>
+              <button
+                type="button"
+                onClick={() => onEditingChange(false)}
+                className="rounded-md border border-karsa-border px-4 py-2 text-sm text-karsa-muted"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <dl className="mt-6 space-y-3 border-t border-karsa-border-subtle pt-4 text-sm text-karsa-muted">
+            <div>
+              <dt className="text-xs text-karsa-faint uppercase">Client</dt>
+              <dd className="mt-1 text-karsa-text">{appt.clientName}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-karsa-faint uppercase">Service</dt>
+              <dd className="mt-1 text-karsa-text">{appt.serviceName}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-karsa-faint uppercase">Time</dt>
+              <dd className="mt-1 text-karsa-text">
+                {formatTime(appt.startIso)} – {formatTime(appt.endIso)}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-karsa-faint uppercase">Employee</dt>
+              <dd className="mt-1 text-karsa-text">{appt.employeeName}</dd>
+            </div>
+          </dl>
+        )}
+
+        <div className="mt-6 space-y-3 border-t border-karsa-border-subtle pt-4">
+          <p className="text-sm text-karsa-muted">
+            In the live app, appointment-linked forms appear here so staff can
+            open and fill Client Intake, Session Notes, and other linked forms
+            for this visit.
+          </p>
+          {linkedForms.length === 0 ? (
+            <p className="text-xs text-karsa-faint">
+              No appointment-linked forms in this demo yet.
+            </p>
+          ) : (
+            <ul className="space-y-2">
+              {linkedForms.map((f) => (
+                <li key={f.id}>
+                  <div className="inline-flex w-full items-center gap-2 rounded-md border border-karsa-border px-3 py-1.5 text-left text-sm text-karsa-text opacity-80">
+                    <span className="text-karsa-warning">○</span>
+                    {f.name}
+                    <span className="ml-auto text-[11px] text-karsa-faint">
+                      {f.audience === "staff" ? "Staff" : "Client"}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div className="mt-6 flex flex-wrap gap-2">
+          {!editing ? (
+            <button
+              type="button"
+              onClick={() => onEditingChange(true)}
+              className="rounded-md border border-karsa-accent/40 px-4 py-2 text-sm font-medium text-karsa-accent-strong"
+            >
+              Edit
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md bg-karsa-accent px-4 py-2 text-sm font-medium text-karsa-bg"
+          >
+            Close
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              deleteAppointment(appt.id);
+              onClose();
+            }}
+            className="rounded-md border border-karsa-border px-4 py-2 text-sm text-karsa-muted hover:border-karsa-danger hover:text-karsa-danger"
+          >
+            Remove from demo
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+

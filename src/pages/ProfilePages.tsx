@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ConfirmationEditor } from "../components/ConfirmationEditor";
-import { HmTimeSelect } from "../components/inputs/HmTimeSelect";
+import { RoleSelect } from "../components/RoleSelect";
 import {
   clientDisplayName,
   formatClock,
@@ -352,6 +352,7 @@ export function EmployeeProfilePage() {
 
   const [availability, setAvailability] = useState<EmployeeAvailability[]>([]);
   const [serviceIds, setServiceIds] = useState<string[]>([]);
+  const [role, setRole] = useState("practitioner");
   const [hoursSaved, setHoursSaved] = useState(false);
   const [servicesSaved, setServicesSaved] = useState(false);
 
@@ -437,10 +438,10 @@ export function EmployeeProfilePage() {
           </label>
           <label className="text-xs text-karsa-faint">
             Role
-            <input
-              readOnly
-              value="Practitioner"
-              className="mt-1 w-full rounded-md border border-karsa-border bg-karsa-bg px-3 py-2 text-sm text-karsa-text"
+            <RoleSelect
+              value={role}
+              onChange={setRole}
+              className="mt-1 w-full rounded-md border border-karsa-border bg-karsa-bg px-3 py-2 text-sm text-karsa-text outline-none ring-karsa-accent/40 focus:ring-2"
             />
           </label>
         </div>

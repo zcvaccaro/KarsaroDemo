@@ -93,7 +93,7 @@ export function AppointmentBlock({
       role="button"
       tabIndex={0}
       className={[
-        "absolute z-10 cursor-grab overflow-hidden rounded-md border px-1.5 py-1 text-left shadow-sm transition-colors hover:z-20 active:cursor-grabbing",
+        "absolute z-10 cursor-grab overflow-hidden rounded-md border px-1.5 py-1 text-left shadow-sm transition-colors select-none hover:z-20 active:cursor-grabbing",
         dragging ? "opacity-35" : "",
       ].join(" ")}
       style={{

@@ -17,10 +17,12 @@ import {
   uid,
   type FlowStep,
 } from "../lib/store";
+import { useIsMobile } from "../lib/use-is-mobile";
 import { useDemoStore } from "../lib/use-demo-store";
 
 const CARD_W = 176;
 const GAP_W = 24;
+const TRACK_PAD_X = 120;
 
 type AddSelection = { formId: string } | null;
 
@@ -517,6 +519,7 @@ function BookingFlowTestModal({
 }
 
 export function BookingFlowPage() {
+  const isMobile = useIsMobile();
   const { flowSteps, forms, appointmentCreatedAfterStepOrder } = useDemoStore();
   const [steps, setSteps] = useState(flowSteps);
   const [appointmentAfter, setAppointmentAfter] = useState(
@@ -633,6 +636,7 @@ export function BookingFlowPage() {
   }
 
   function onTrackPointerDown(e: ReactPointerEvent, fromSlot?: number) {
+    if (isMobile) return;
     e.preventDefault();
     (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
     setDragging(true);
@@ -876,7 +880,11 @@ export function BookingFlowPage() {
         <div className="karsa-h-scroll pt-3 pb-4">
           <div
             className="flex justify-center pt-1 pb-4"
-            style={{ width: `max(100%, ${trackWidth}px)` }}
+            style={{
+              width: `max(100%, ${trackWidth + TRACK_PAD_X * 2}px)`,
+              paddingLeft: TRACK_PAD_X,
+              paddingRight: TRACK_PAD_X,
+            }}
           >
             <div style={{ width: trackWidth }}>
               <div className="flex gap-6" style={{ width: trackWidth }}>
@@ -972,8 +980,16 @@ export function BookingFlowPage() {
                     aria-label={`Appointment created when ${stepTitle(slot.step, slot.visualIdx > 0 ? visual[slot.visualIdx - 1] : null)} is completed`}
                     className="absolute top-1/2 z-10 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-karsa-accent bg-karsa-bg transition hover:bg-karsa-accent-soft"
                     style={{ left: slotCenterX(slotIdx) }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMarkerFromSlot(slotIdx);
+                    }}
                     onPointerDown={(e) => {
                       e.stopPropagation();
+                      if (isMobile) {
+                        setMarkerFromSlot(slotIdx);
+                        return;
+                      }
                       onTrackPointerDown(e, slotIdx);
                     }}
                   />
@@ -987,7 +1003,11 @@ export function BookingFlowPage() {
                     <div
                       className={[
                         "absolute top-0 left-0 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-karsa-accent bg-karsa-accent",
-                        dragging ? "cursor-grabbing" : "cursor-grab",
+                        isMobile
+                          ? ""
+                          : dragging
+                            ? "cursor-grabbing"
+                            : "cursor-grab",
                       ].join(" ")}
                       onPointerDown={(e) => {
                         e.stopPropagation();
@@ -998,10 +1018,15 @@ export function BookingFlowPage() {
                       <div className="h-8 w-px bg-karsa-accent" />
                       <div
                         className={[
-                          "w-48 rounded-md border border-karsa-accent bg-karsa-accent-soft px-3 py-2.5 text-center shadow-sm",
-                          dragging ? "cursor-grabbing" : "cursor-grab",
+                          "w-40 rounded-md border border-karsa-accent bg-karsa-accent-soft px-3 py-2.5 text-center shadow-sm md:w-48",
+                          isMobile
+                            ? ""
+                            : dragging
+                              ? "cursor-grabbing"
+                              : "cursor-grab",
                         ].join(" ")}
                         onPointerDown={(e) => {
+                          if (isMobile) return;
                           e.stopPropagation();
                           onTrackPointerDown(e, markerSlotIdx);
                         }}
@@ -1012,6 +1037,32 @@ export function BookingFlowPage() {
                         <p className="mt-1 text-xs leading-snug text-karsa-muted">
                           Created when the step above is completed
                         </p>
+                        {isMobile ? (
+                          <div className="mt-2 flex items-center justify-center gap-2">
+                            <button
+                              type="button"
+                              aria-label="Move earlier"
+                              disabled={markerSlotIdx <= 0}
+                              onClick={() =>
+                                setMarkerFromSlot(markerSlotIdx - 1)
+                              }
+                              className="rounded-md border border-karsa-accent/40 px-2 py-1 text-sm text-karsa-accent-strong disabled:opacity-30"
+                            >
+                              ‹
+                            </button>
+                            <button
+                              type="button"
+                              aria-label="Move later"
+                              disabled={markerSlotIdx >= markerSlotCount - 1}
+                              onClick={() =>
+                                setMarkerFromSlot(markerSlotIdx + 1)
+                              }
+                              className="rounded-md border border-karsa-accent/40 px-2 py-1 text-sm text-karsa-accent-strong disabled:opacity-30"
+                            >
+                              ›
+                            </button>
+                          </div>
+                        ) : null}
                       </div>
                     </div>
                   </div>

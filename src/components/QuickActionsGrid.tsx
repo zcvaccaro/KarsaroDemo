@@ -17,6 +17,7 @@ export function QuickActionsGrid({
     orderQuickActions(initialOrder),
     (_current, next: QuickActionDef[]) => next,
   );
+  const [editing, setEditing] = useState(false);
   const [draggingHref, setDraggingHref] = useState<string | null>(null);
   /** Index where the dragged item would insert (before this index). */
   const [insertBefore, setInsertBefore] = useState<number | null>(null);
@@ -51,6 +52,11 @@ export function QuickActionsGrid({
     setDraggingHref(null);
     setInsertBefore(null);
     setPointer(null);
+  }
+
+  function toggleEditing() {
+    if (editing) clearDrag();
+    setEditing((on) => !on);
   }
 
   function updateInsertFromPoint(clientX: number, clientY: number) {
@@ -119,9 +125,14 @@ export function QuickActionsGrid({
       <div className="flex items-baseline justify-between gap-3">
         <div>
           <h2 className="text-sm font-medium text-karsa-text">Quick actions</h2>
-          <p className="mt-1 text-xs text-karsa-faint">
-            Drag to reorder — saved for your business.
-          </p>
+          <button
+            type="button"
+            onClick={toggleEditing}
+            aria-pressed={editing}
+            className="mt-1 rounded-md border border-karsa-border px-2 py-0.5 text-xs text-karsa-muted transition-colors hover:bg-karsa-surface-hover hover:text-karsa-text"
+          >
+            {editing ? "Done" : "Edit widgets"}
+          </button>
         </div>
         {pending ? (
           <p className="text-xs text-karsa-muted">Saving…</p>
@@ -169,8 +180,12 @@ export function QuickActionsGrid({
               ) : null}
               <div
                 data-quick-action={action.href}
-                draggable
+                draggable={editing}
                 onDragStart={(e) => {
+                  if (!editing) {
+                    e.preventDefault();
+                    return;
+                  }
                   const rect = (
                     e.currentTarget as HTMLElement
                   ).getBoundingClientRect();
@@ -193,15 +208,18 @@ export function QuickActionsGrid({
                   requestAnimationFrame(() => ghost.remove());
                 }}
                 onDrag={(e) => {
+                  if (!editing) return;
                   if (e.clientX === 0 && e.clientY === 0) return;
                   updateInsertFromPoint(e.clientX, e.clientY);
                 }}
                 onDragOver={(e) => {
+                  if (!editing) return;
                   e.preventDefault();
                   e.dataTransfer.dropEffect = "move";
                   updateInsertFromPoint(e.clientX, e.clientY);
                 }}
                 onDrop={(e) => {
+                  if (!editing) return;
                   e.preventDefault();
                   const fromHref =
                     e.dataTransfer.getData("text/plain") || dragHrefRef.current;
@@ -222,9 +240,13 @@ export function QuickActionsGrid({
                   to={action.href}
                   draggable={false}
                   onClick={(e) => {
-                    if (draggingHref || pending) e.preventDefault();
+                    if (editing || draggingHref || pending) e.preventDefault();
                   }}
-                  className="group flex h-full cursor-grab flex-col items-center justify-center gap-2.5 rounded-xl border border-karsa-border-subtle bg-karsa-surface/50 px-3 py-5 text-center transition-all duration-200 hover:-translate-y-0.5 hover:border-karsa-accent/35 hover:bg-karsa-surface-hover active:cursor-grabbing"
+                  className={`group flex h-full flex-col items-center justify-center gap-2.5 rounded-xl border bg-karsa-surface/50 px-3 py-5 text-center transition-all duration-200 hover:border-karsa-accent/35 hover:bg-karsa-surface-hover ${
+                    editing
+                      ? "cursor-grab border-karsa-accent/30 active:cursor-grabbing"
+                      : "cursor-pointer border-karsa-border-subtle hover:-translate-y-0.5"
+                  }`}
                 >
                   <ActionIcon name={action.icon} />
                   <span className="text-xs font-medium text-karsa-text transition-colors group-hover:text-karsa-accent-strong">

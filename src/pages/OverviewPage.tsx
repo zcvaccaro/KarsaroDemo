@@ -3,9 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { OverviewMiniCalendar } from "../components/OverviewMiniCalendar";
 import { QuickActionsGrid } from "../components/QuickActionsGrid";
 import {
-  addDays,
   formatYmd,
-  parseYmd,
   weekStartParam,
   type CalendarAppointment,
 } from "../lib/calendar-utils";
@@ -51,12 +49,9 @@ export function OverviewPage() {
   const state = useDemoStore();
   const [searchParams] = useSearchParams();
   const weekStartYmd = weekStartParam(searchParams.get("week"));
-  const weekStart = parseYmd(weekStartYmd);
-  const weekEndYmd = formatYmd(addDays(weekStart, 7));
 
   const weekAppointments = useMemo(() => {
     return state.appointments
-      .filter((a) => a.date >= weekStartYmd && a.date < weekEndYmd)
       .map((a) => {
         const client = state.clients.find((c) => c.id === a.clientId);
         const service = state.services.find((s) => s.id === a.serviceId);
@@ -69,14 +64,7 @@ export function OverviewPage() {
         );
       })
       .sort((a, b) => a.startIso.localeCompare(b.startIso));
-  }, [
-    state.appointments,
-    state.clients,
-    state.services,
-    state.employees,
-    weekStartYmd,
-    weekEndYmd,
-  ]);
+  }, [state.appointments, state.clients, state.services, state.employees]);
 
   const upcomingRows = useMemo(() => {
     const nowMs = Date.now();

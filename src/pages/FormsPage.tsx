@@ -30,7 +30,6 @@ const HIDDEN_MAIN_SECTION_KEYS = new Set([
   "custom_fields",
   "health_information",
   "session",
-  "contact",
   "service_selection",
 ]);
 
@@ -227,6 +226,10 @@ export function FormsListPage() {
         then save. Saved forms can be added to Booking flow and paired with a
         confirmation message.
       </p>
+      <p className="mt-4 rounded-md border border-karsa-accent/25 bg-karsa-accent-soft/40 px-3 py-2.5 text-sm leading-relaxed text-karsa-muted md:hidden">
+        Form previews work on this screen, but they&apos;re easier to review on
+        a desktop or tablet.
+      </p>
 
       <div className="mt-8">
         <CreateFormPanel />
@@ -297,11 +300,14 @@ export function FormCustomizerPage() {
   const visibleSections = useMemo(() => {
     if (!form) return [];
     return form.sections.filter((s) => {
+      if (s.key === "contact") {
+        return templateKey === "booking" || templateKey === "waitlist";
+      }
       if (HIDDEN_MAIN_SECTION_KEYS.has(s.key)) return false;
       if (audience === "staff" && LEGAL_SECTION_KEYS.has(s.key)) return false;
       return true;
     });
-  }, [form, audience]);
+  }, [form, audience, templateKey]);
 
   if (!form) {
     return (
@@ -441,6 +447,10 @@ export function FormCustomizerPage() {
         Turn sections and questions on or off, then preview on the right. When
         you save, this form can be used in Booking flow and paired with a
         confirmation message under Confirmations.
+      </p>
+      <p className="mt-4 rounded-md border border-karsa-accent/25 bg-karsa-accent-soft/40 px-3 py-2.5 text-sm leading-relaxed text-karsa-muted md:hidden">
+        Form previews work on this screen, but they&apos;re easier to review on
+        a desktop or tablet.
       </p>
 
       <div className="mt-8 space-y-6">
@@ -692,7 +702,10 @@ export function FormCustomizerPage() {
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <p className="text-sm text-karsa-text">
-                            {section.label}
+                            {section.key === "contact" ||
+                            section.key === "personal_information"
+                              ? "Personal Information"
+                              : section.label}
                             {section.key === "consent" ? (
                               <span className="font-normal text-karsa-faint">
                                 {" "}
@@ -743,6 +756,34 @@ export function FormCustomizerPage() {
                             <p className="mt-0.5 text-xs text-karsa-accent-strong">
                               Always included
                             </p>
+                          ) : null}
+                          {section.key === "contact" ||
+                          section.key === "personal_information" ? (
+                            <div className="mt-2">
+                              <p className="text-xs text-karsa-faint">
+                                {templateKey === "booking"
+                                  ? "Always on for this form — first name, last name, email, and phone."
+                                  : "First name, last name, email, and phone. Autopopulated from the booking form when we already have this client."}
+                              </p>
+                              <ul className="mt-2 space-y-1">
+                                {[
+                                  "First Name",
+                                  "Last Name",
+                                  "Email Address",
+                                  "Phone Number",
+                                ].map((label) => (
+                                  <li
+                                    key={label}
+                                    className="flex items-center justify-between gap-2 text-sm text-karsa-muted"
+                                  >
+                                    <span>{label}</span>
+                                    <span className="text-[11px] text-karsa-accent-strong">
+                                      Always on
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
                           ) : null}
                         </div>
                         {section.locked ? (
