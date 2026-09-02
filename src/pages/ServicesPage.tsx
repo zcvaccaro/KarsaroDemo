@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ExpandableAddSection } from "../components/ExpandableAddSection";
+import { PageLink } from "../components/PageLink";
 import { KarsaToggleField } from "../components/karsa-toggle-switch";
 import {
   DEFAULT_SERVICE_COLOR_ID,
@@ -181,7 +182,8 @@ function ServiceFields({
             })}
           </div>
           <p className="mt-1 text-[11px] text-karsa-faint">
-            Display this service in the color of your choice. If Google Calendar
+            Display this service in the color of your choice. If{" "}
+            <PageLink to="/dashboard/settings/google">Google Calendar</PageLink>{" "}
             sync is enabled these colors will be reflected there as well.
           </p>
         </div>
@@ -426,8 +428,10 @@ export function ServicesPage() {
       </h1>
       <p className="mt-3 max-w-2xl text-base leading-relaxed text-karsa-muted">
         Set up what you offer: name, how long it takes, price to display, and
-        calendar color. These choices appear when you book on the Calendar or
-        Book Now, and they color-code visits on the schedule.
+        calendar color. These choices appear when you book on the{" "}
+        <PageLink to="/dashboard/calendar">Calendar</PageLink> or{" "}
+        <PageLink to="/dashboard/bookings/new">Book Now</PageLink>, and they
+        color-code visits on the schedule.
       </p>
 
       <ExpandableAddSection

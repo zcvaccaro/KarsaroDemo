@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { KarsaToggleSwitch } from "../components/karsa-toggle-switch";
+import { PageLink } from "../components/PageLink";
 import { TemplateFormPreview } from "../components/TemplateFormPreview";
 import {
   createFormFromTemplate,
@@ -223,8 +224,9 @@ export function FormsListPage() {
       <p className="mt-3 max-w-2xl text-base leading-relaxed text-karsa-muted">
         Create and edit the paperwork clients and staff fill out (intake,
         booking questions, session notes, and more). Turn sections on or off,
-        then save. Saved forms can be added to Booking flow and paired with a
-        confirmation message.
+        then save. Saved forms can be added to{" "}
+        <PageLink to="/dashboard/settings/booking-flow">Booking flow</PageLink>{" "}
+        and paired with a confirmation message.
       </p>
       <p className="mt-4 rounded-md border border-karsa-accent/25 bg-karsa-accent-soft/40 px-3 py-2.5 text-sm leading-relaxed text-karsa-muted md:hidden">
         Form previews work on this screen, but they&apos;re easier to review on
@@ -445,8 +447,10 @@ export function FormCustomizerPage() {
       </h1>
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-karsa-muted">
         Turn sections and questions on or off, then preview on the right. When
-        you save, this form can be used in Booking flow and paired with a
-        confirmation message under Confirmations.
+        you save, this form can be used in{" "}
+        <PageLink to="/dashboard/settings/booking-flow">Booking flow</PageLink>{" "}
+        and paired with a confirmation message under{" "}
+        <PageLink to="/dashboard/forms/confirmations">Confirmations</PageLink>.
       </p>
       <p className="mt-4 rounded-md border border-karsa-accent/25 bg-karsa-accent-soft/40 px-3 py-2.5 text-sm leading-relaxed text-karsa-muted md:hidden">
         Form previews work on this screen, but they&apos;re easier to review on
@@ -488,10 +492,14 @@ export function FormCustomizerPage() {
                           Booking form (client use only)
                         </p>
                         <p className="mt-1.5 text-karsa-muted">
-                          This is the required Book Now form. It cannot be
-                          switched to internal use. Contact and scheduling are
-                          software-required; extras (reason for visit, custom
-                          fields) appear as a list on appointment details.
+                          This is the required{" "}
+                          <PageLink to="/dashboard/bookings/new">
+                            Book Now
+                          </PageLink>{" "}
+                          form. It cannot be switched to internal use. Contact
+                          and scheduling are software-required; extras (reason
+                          for visit, custom fields) appear as a list on
+                          appointment details.
                         </p>
                       </div>
                       <p className="text-xs text-karsa-faint">
@@ -510,7 +518,13 @@ export function FormCustomizerPage() {
                           <code className="text-[11px]">
                             /book/[slug]/waitlist
                           </code>
-                          . It is not added as a booking-flow step.
+                          . It is not added as a{" "}
+                          <PageLink to="/dashboard/settings/booking-flow">
+                            Booking flow
+                          </PageLink>{" "}
+                          step. Manage entries on{" "}
+                          <PageLink to="/dashboard/waitlist">Waitlist</PageLink>
+                          .
                         </p>
                       </div>
                       <p className="text-xs text-karsa-faint">
@@ -677,14 +691,20 @@ export function FormCustomizerPage() {
                   booking extras are stored as a simple answer list on the
                   appointment. Use an Intake form for charts and longer
                   questionnaires. Consent, privacy, cancellation, and custom
-                  policy blocks can be toggled on — edit their wording in
-                  Settings → Business.
+                  policy blocks can be toggled on — edit their wording in{" "}
+                  <PageLink to="/dashboard/settings">
+                    Settings → Business
+                  </PageLink>
+                  .
                 </p>
               ) : (
                 <p className="mt-2 text-xs leading-relaxed text-karsa-muted">
                   Consent, privacy, cancellation, and custom policy blocks use
-                  the wording from Settings → Business. Toggle them on when you
-                  want them on this form.
+                  the wording from{" "}
+                  <PageLink to="/dashboard/settings">
+                    Settings → Business
+                  </PageLink>
+                  . Toggle them on when you want them on this form.
                 </p>
               )}
               <ul className="mt-4 space-y-2">
@@ -727,21 +747,33 @@ export function FormCustomizerPage() {
                           ) : null}
                           {section.key === "consent" ? (
                             <p className="mt-0.5 text-xs text-karsa-faint">
-                              Wording from Settings → Business. Shows message +
+                              Wording from{" "}
+                              <PageLink to="/dashboard/settings">
+                                Settings → Business
+                              </PageLink>
+                              . Shows message +
                               checkbox.
                             </p>
                           ) : null}
                           {section.key === "privacy_policy" ||
                           section.key === "cancellation_policy" ? (
                             <p className="mt-0.5 text-xs text-karsa-faint">
-                              Wording from Settings → Business. Display-only
+                              Wording from{" "}
+                              <PageLink to="/dashboard/settings">
+                                Settings → Business
+                              </PageLink>
+                              . Display-only
                               block with clickable policy links.
                             </p>
                           ) : null}
                           {section.key === "waitlist_cta" ? (
                             <p className="mt-0.5 text-xs text-karsa-faint">
                               Requires a saved Waitlist form and Waitlist
-                              enabled in Settings → Business. Without both,
+                              enabled in{" "}
+                              <PageLink to="/dashboard/settings">
+                                Settings → Business
+                              </PageLink>
+                              . Without both,
                               clients will not see this button.
                             </p>
                           ) : null}

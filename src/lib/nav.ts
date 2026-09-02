@@ -126,7 +126,7 @@ export const demoNav: NavGroup[] = [
         href: "/dashboard/settings/billing",
         label: "Billing",
         description: "Karsaro subscription plan",
-        mode: "shell",
+        mode: "interactive",
       },
     ],
   },

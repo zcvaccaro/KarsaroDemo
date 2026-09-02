@@ -84,6 +84,59 @@ body {
   animation: quick-action-nudge-right 0.55s ease-in-out infinite;
 }
 
+/* Minimal green scrollbars app-wide */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--karsa-accent) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--karsa-accent);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--karsa-accent-strong);
+}
+
+/* Clickable controls use the pointer, not the text caret */
+a,
+button,
+summary,
+label,
+select,
+[role="button"],
+[role="link"],
+[role="option"],
+[role="menuitem"],
+[role="switch"],
+[role="tab"],
+input[type="checkbox"],
+input[type="radio"],
+input[type="submit"],
+input[type="button"],
+input[type="file"],
+input[type="date"],
+input[type="time"] {
+  cursor: pointer;
+}
+
+button:disabled,
+input:disabled,
+select:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
 /* Light hover so every control reads as clickable */
 button:not(:disabled),
 input[type="submit"]:not(:disabled),

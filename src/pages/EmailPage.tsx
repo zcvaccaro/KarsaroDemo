@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { EmailMessageEditor } from "../components/EmailMessageEditor";
+import { PageLink } from "../components/PageLink";
 import { KarsaToggleField } from "../components/karsa-toggle-switch";
 import { upsertEmailTemplate, type EmailTemplate } from "../lib/store";
 import { useDemoStore } from "../lib/use-demo-store";
@@ -122,8 +123,9 @@ export function EmailPage() {
       </h1>
       <p className="mt-3 max-w-2xl text-base leading-relaxed text-karsa-muted">
         Write the emails clients get when a visit is booked, reminded, cancelled,
-        or when a waitlist opening appears. In the full product these send
-        automatically; here you can edit the wording and preview how it looks.
+        or when a <PageLink to="/dashboard/waitlist">waitlist</PageLink> opening
+        appears. In the full product these send automatically; here you can edit
+        the wording and preview how it looks.
       </p>
 
       <div className="mt-8 space-y-6">

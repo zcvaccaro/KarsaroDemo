@@ -8,6 +8,7 @@
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { PageLink } from "../components/PageLink";
 import {
   CalendarBookModal,
   type BookModalDefaults,
@@ -1316,6 +1317,8 @@ export function CalendarPage() {
         See everyone&apos;s appointments for the day, week, or month. Click an
         empty time to book someone, or drag a visit to a new time. What you
         schedule here shows up on Overview and on that client&apos;s profile.
+        You can also book from{" "}
+        <PageLink to="/dashboard/bookings/new">Book Now</PageLink>.
       </p>
 
       <CalendarPeriodControls

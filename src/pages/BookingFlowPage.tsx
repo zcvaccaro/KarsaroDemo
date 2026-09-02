@@ -7,6 +7,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
+import { PageLink } from "../components/PageLink";
 import {
   bookingConfirmationHtml,
   confirmationPageTitle,
@@ -318,8 +319,9 @@ function BookingFlowTestModal({
               Test out your flow
             </h2>
             <p className="mt-1 text-sm text-stone-600">
-              Same screens as Book Now. No appointments or form answers are
-              saved.
+              Same screens as{" "}
+              <PageLink to="/dashboard/bookings/new">Book Now</PageLink>. No
+              appointments or form answers are saved.
             </p>
           </div>
           <div className="flex shrink-0 gap-2">
@@ -778,8 +780,10 @@ export function BookingFlowPage() {
       <p className="mt-3 max-w-2xl text-base leading-relaxed text-karsa-muted">
         Build the step-by-step path clients and staff follow when booking.
         Add forms in order, then choose when the appointment is actually
-        created. Those forms come from Forms, and the thank-you messages come
-        from Confirmations.
+        created. Those forms come from{" "}
+        <PageLink to="/dashboard/forms">Forms</PageLink>, and the thank-you
+        messages come from{" "}
+        <PageLink to="/dashboard/forms/confirmations">Confirmations</PageLink>.
       </p>
 
       <div className="mt-8 space-y-8">
@@ -791,7 +795,11 @@ export function BookingFlowPage() {
               </p>
               <p className="mt-1 text-xs text-karsa-faint">
                 Adds the form plus its paired confirmation page. Edit confirmation
-                copy under Forms → Confirmations.
+                copy under{" "}
+                <PageLink to="/dashboard/forms/confirmations">
+                  Forms → Confirmations
+                </PageLink>
+                .
               </p>
             </div>
             <button
@@ -1115,8 +1123,11 @@ export function BookingFlowPage() {
               </p>
             ) : (
               <p className="mt-3 text-sm text-karsa-muted">
-                Confirmation messages for client forms live under Forms →
-                Confirmations.
+                Confirmation messages for client forms live under{" "}
+                <PageLink to="/dashboard/forms/confirmations">
+                  Forms → Confirmations
+                </PageLink>
+                .
               </p>
             )}
           </div>

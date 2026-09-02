@@ -150,7 +150,14 @@ export function OverviewPage() {
           >
             Booking flow
           </Link>{" "}
-          to set the steps of Book Now.
+          to set the steps of{" "}
+          <Link
+            to="/dashboard/bookings/new"
+            className="text-karsa-accent-strong underline-offset-4 hover:underline"
+          >
+            Book Now
+          </Link>
+          .
         </p>
 
         <p className="mt-4 text-xs text-karsa-faint">

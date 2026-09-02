@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { CalendarBookModal } from "../components/calendar/CalendarBookModal";
 import { ConfirmationEditor } from "../components/ConfirmationEditor";
 import { EntityOpenButton, useEntityModals } from "../components/EntityModals";
+import { PageLink } from "../components/PageLink";
 import { HmTimeSelect } from "../components/inputs/HmTimeSelect";
 import { KarsaToggleSwitch } from "../components/karsa-toggle-switch";
 import { RoleSelect } from "../components/RoleSelect";
@@ -152,6 +153,23 @@ export function ClientProfilePage() {
     .sort((a, b) =>
       a.date === b.date ? b.startMin - a.startMin : b.date.localeCompare(a.date),
     );
+  const now = Date.now();
+  const nextAppt = [...appointments]
+    .filter((a) => {
+      if (a.clientId !== client.id) return false;
+      const status = appointmentStatus(a);
+      if (status !== "scheduled") return false;
+      const [y, m, d] = a.date.split("-").map(Number);
+      const start = new Date(y, m - 1, d, 0, 0, 0, 0);
+      start.setMinutes(a.startMin);
+      return start.getTime() >= now;
+    })
+    .sort((a, b) =>
+      a.date === b.date ? a.startMin - b.startMin : a.date.localeCompare(b.date),
+    )[0];
+  const nextService = nextAppt
+    ? services.find((s) => s.id === nextAppt.serviceId)
+    : null;
   const linkedForms = forms.filter(
     (f) => f.showInCalendarDescription && !f.isDraft && f.active,
   );
@@ -180,9 +198,25 @@ export function ClientProfilePage() {
             {client.email || "No email"}
             {client.phone ? ` · ${client.phone}` : ""}
           </p>
+          <p className="mt-2 text-sm text-karsa-muted">
+            Next appointment:{" "}
+            {nextAppt ? (
+              <EntityOpenButton
+                kind="appointment"
+                id={nextAppt.id}
+                className="text-karsa-accent-strong underline-offset-4 hover:underline"
+              >
+                {shortDate(nextAppt.date)} at {formatClock(nextAppt.startMin)}
+                {nextService ? ` · ${nextService.name}` : ""}
+              </EntityOpenButton>
+            ) : (
+              "None scheduled"
+            )}
+          </p>
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-karsa-muted">
             Contact details and visit history for this person. Book them again
-            from here; new appointments also show on the Calendar.
+            from here; new appointments also show on the{" "}
+            <PageLink to="/dashboard/calendar">Calendar</PageLink>.
           </p>
         </div>
         <ClientBookButton clientId={client.id} />
@@ -484,8 +518,9 @@ export function EmployeeProfilePage() {
       </div>
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-karsa-muted">
         Who this staff member is, which services they can do, and their hours.
-        They appear by name on the Calendar when you book or filter the
-        schedule.
+        They appear by name on the{" "}
+        <PageLink to="/dashboard/calendar">Calendar</PageLink> when you book or
+        filter the schedule.
       </p>
 
       <section className="mt-8 border border-karsa-border-subtle p-4">
@@ -736,8 +771,9 @@ export function WaitlistDetailPage() {
         <span className="capitalize text-karsa-accent-strong">
           {entry.status}
         </span>
-        . Prefer a date below, then book them into a real slot with Book Now —
-        that fills the Calendar.
+        . Prefer a date below, then book them into a real slot with{" "}
+        <PageLink to="/dashboard/bookings/new">Book Now</PageLink> — that fills
+        the <PageLink to="/dashboard/calendar">Calendar</PageLink>.
       </p>
 
       <section className="mt-8 border border-karsa-border-subtle p-4">
@@ -812,7 +848,10 @@ export function ConfirmationEditorPage() {
       <p className="mt-3 max-w-2xl text-base leading-relaxed text-karsa-muted">
         Edit the thank-you message for{" "}
         <span className="text-karsa-text">{form.name}</span>. This text shows
-        after that form is finished in Book Now when Booking flow includes it.
+        after that form is finished in{" "}
+        <PageLink to="/dashboard/bookings/new">Book Now</PageLink> when{" "}
+        <PageLink to="/dashboard/settings/booking-flow">Booking flow</PageLink>{" "}
+        includes it.
       </p>
 
       <ConfirmationEditor formId={form.id} formName={form.name} />

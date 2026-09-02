@@ -1,5 +1,6 @@
 import { DayAvailabilityEdge } from "../components/DayAvailabilityEdge";
 import { ExpandableAddSection } from "../components/ExpandableAddSection";
+import { PageLink } from "../components/PageLink";
 import { HmTimeSelect } from "../components/inputs/HmTimeSelect";
 import type { Location, LocationHour } from "../lib/store";
 import { updateLocationHours } from "../lib/store";
@@ -136,8 +137,8 @@ function LocationFields({
         <p className={labelClass}>Hours of operation</p>
         {hoursEditable ? (
           <p className="mt-1 text-xs text-karsa-faint">
-            Changes save in this browser and update closed hours on the
-            Calendar.
+            Changes save in this browser and update closed hours on the{" "}
+            <PageLink to="/dashboard/calendar">Calendar</PageLink>.
           </p>
         ) : null}
         <div className="mt-2 space-y-2">
@@ -269,7 +270,8 @@ export function LocationsPage() {
       </h1>
       <p className="mt-3 max-w-2xl text-base leading-relaxed text-karsa-muted">
         Your studio address and which days/hours you are open. Closed days show
-        as blocked on the Calendar so nobody books when you are away.
+        as blocked on the <PageLink to="/dashboard/calendar">Calendar</PageLink>{" "}
+        so nobody books when you are away.
       </p>
 
       <ExpandableAddSection

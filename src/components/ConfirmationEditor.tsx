@@ -39,7 +39,13 @@ export function ConfirmationEditor({
           className={inputClass}
         />
         <p className="mt-1.5 text-xs text-karsa-faint">
-          Defaults to “{formName} Confirmation”. Used in Forms → Confirmations
+          Defaults to “{formName} Confirmation”. Used in{" "}
+          <Link
+            to="/dashboard/forms/confirmations"
+            className="text-karsa-accent-strong underline-offset-4 hover:underline"
+          >
+            Forms → Confirmations
+          </Link>{" "}
           lists.
         </p>
       </div>
@@ -54,8 +60,14 @@ export function ConfirmationEditor({
           >
             {formName}
           </Link>
-          . The Continue / Close button label is set automatically in Booking
-          flow based on whether another form follows.
+          . The Continue / Close button label is set automatically in{" "}
+          <Link
+            to="/dashboard/settings/booking-flow"
+            className="font-medium text-karsa-accent-strong underline-offset-4 hover:underline"
+          >
+            Booking flow
+          </Link>{" "}
+          based on whether another form follows.
         </p>
         <div className="mt-4">
           <ConfirmationMessageEditor

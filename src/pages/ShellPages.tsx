@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { BillingPlans } from "../components/BillingPlans";
 import { FullVersionNote } from "../components/FullVersionNote";
 import { EntityOpenButton } from "../components/EntityModals";
+import { PageLink } from "../components/PageLink";
 import { DateInput } from "../components/inputs/DateInput";
 import { HmTimeSelect } from "../components/inputs/HmTimeSelect";
 import { KarsaSelect } from "../components/inputs/KarsaSelect";
@@ -29,7 +31,7 @@ function PageChrome({
 }: {
   eyebrow: string;
   title: string;
-  blurb: string;
+  blurb: React.ReactNode;
   maxWidth?: string;
   children: React.ReactNode;
 }) {
@@ -110,7 +112,14 @@ export function BookNowPage() {
       <PageChrome
         eyebrow="Step 1"
         title="New booking"
-        blurb="Find someone already in your list, or add a new person, then finish booking them. New visits land on the Calendar and on that person's client page."
+        blurb={
+          <>
+            Find someone already in your list, or add a new person, then finish
+            booking them. New visits land on the{" "}
+            <PageLink to="/dashboard/calendar">Calendar</PageLink> and on that
+            person&apos;s client page.
+          </>
+        }
       >
         <div className="max-w-xl space-y-6">
           <div className="flex gap-2">
@@ -254,7 +263,15 @@ export function BookNowPage() {
     <PageChrome
       eyebrow="Schedule · Book Now"
       title="New booking"
-      blurb={`Choose the service, staff member, day, and time for ${client ? clientDisplayName(client) : "this client"}. When you save, the visit appears on the Calendar and under their client profile.`}
+      blurb={
+        <>
+          Choose the service, staff member, day, and time for{" "}
+          {client ? clientDisplayName(client) : "this client"}. When you save,
+          the visit appears on the{" "}
+          <PageLink to="/dashboard/calendar">Calendar</PageLink> and under their
+          client profile.
+        </>
+      }
     >
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="block text-sm text-karsa-muted">
@@ -378,7 +395,14 @@ export function WaitlistPage() {
     <PageChrome
       eyebrow="Schedule"
       title="Waitlist"
-      blurb="People waiting for an opening. When a time frees up, you reach out yourself and book them — nothing is claimed automatically. Booking them uses Book Now and fills the Calendar."
+      blurb={
+        <>
+          People waiting for an opening. When a time frees up, you reach out
+          yourself and book them — nothing is claimed automatically. Booking
+          them uses <PageLink to="/dashboard/bookings/new">Book Now</PageLink>{" "}
+          and fills the <PageLink to="/dashboard/calendar">Calendar</PageLink>.
+        </>
+      }
     >
       <FullVersionNote more="You can offer opened slots from the calendar, track preferred dates, mark entries offered/booked/cancelled, and jump straight into Book Now for that client — with live availability and audit history." />
       <ul className="space-y-3">
@@ -446,7 +470,14 @@ export function ClientsPage() {
     <PageChrome
       eyebrow="People"
       title="Clients"
-      blurb="Your people list — search, open a profile, or book them again. New clients are added when someone books (here or in the full product’s public booking page)."
+      blurb={
+        <>
+          Your people list — search, open a profile, or book them again. New
+          clients are added when someone books (here or in the full product’s
+          public booking page). Open a profile to edit details or use{" "}
+          <PageLink to="/dashboard/bookings/new">Book Now</PageLink>.
+        </>
+      }
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
         <div className="min-w-0 flex-1">
@@ -524,7 +555,15 @@ export function EmployeesPage() {
     <PageChrome
       eyebrow="People"
       title="Employees"
-      blurb="The team who can take appointments. Open someone to see which services they offer. Their names and colors show up on the Calendar when you filter or book."
+      blurb={
+        <>
+          The team who can take appointments. Open someone to see which{" "}
+          <PageLink to="/dashboard/services">services</PageLink> they offer.
+          Their names and colors show up on the{" "}
+          <PageLink to="/dashboard/calendar">Calendar</PageLink> when you filter
+          or book.
+        </>
+      }
     >
       <FullVersionNote more="Staff profiles support weekly hours per location, service assignments, calendar sync mapping, and role-based access that this demo only sketches." />
       <div className="space-y-3">
@@ -567,7 +606,15 @@ export function ConfirmationsPage() {
     <PageChrome
       eyebrow="Forms · Confirmations"
       title="Confirmations"
-      blurb="The short “you’re all set” message shown after someone finishes a form. Edit the wording here; Booking flow decides which forms (and their confirmations) appear in Book Now."
+      blurb={
+        <>
+          The short “you’re all set” message shown after someone finishes a
+          form. Edit the wording here;{" "}
+          <PageLink to="/dashboard/settings/booking-flow">Booking flow</PageLink>{" "}
+          decides which forms (and their confirmations) appear in{" "}
+          <PageLink to="/dashboard/bookings/new">Book Now</PageLink>.
+        </>
+      }
     >
       <p className="text-xs font-medium tracking-[0.12em] text-karsa-faint uppercase">
         Paired with your client forms
@@ -605,15 +652,25 @@ export function BusinessPage() {
     <PageChrome
       eyebrow="Settings"
       title="Business settings"
-      blurb="Studio-wide basics: timezone, how early someone can book, reminders, and the policy text that can appear on forms. Hours themselves are edited under Locations and affect the Calendar."
+      blurb={
+        <>
+          Studio-wide basics: timezone, how early someone can book, reminders,
+          and the policy text that can appear on forms. Hours themselves are
+          edited under <PageLink to="/dashboard/locations">Locations</PageLink>{" "}
+          and affect the <PageLink to="/dashboard/calendar">Calendar</PageLink>.
+        </>
+      }
       maxWidth="max-w-6xl"
     >
       <section className="rounded-md border border-karsa-border-subtle p-4">
         <h2 className="text-sm font-medium text-karsa-text">Operating hours</h2>
         <p className="mt-1 text-xs leading-relaxed text-karsa-faint">
-          Open and closed days are set per location. The calendar and booking
-          slots follow those hours — closed days appear with a dark orange
-          overlay, and appointments cannot be scheduled outside operating hours.
+          Open and closed days are set per{" "}
+          <PageLink to="/dashboard/locations">location</PageLink>. The{" "}
+          <PageLink to="/dashboard/calendar">Calendar</PageLink> and{" "}
+          <PageLink to="/dashboard/bookings/new">Book Now</PageLink> slots
+          follow those hours — closed days appear with a dark orange overlay,
+          and appointments cannot be scheduled outside operating hours.
         </p>
         <Link
           to="/dashboard/locations"
@@ -713,7 +770,14 @@ export function SyncSetupPage() {
     <PageChrome
       eyebrow="Sync"
       title="Sync setup"
-      blurb="Connect Google so appointments and files stay in one place. This demo only shows the steps — the full product does the real sign-in and keeps Calendar visits matched to Google calendars."
+      blurb={
+        <>
+          Connect Google so appointments and files stay in one place. This demo
+          only shows the steps — the full product does the real sign-in and
+          keeps <PageLink to="/dashboard/calendar">Calendar</PageLink> visits
+          matched to Google calendars.
+        </>
+      }
       maxWidth="max-w-3xl"
     >
       <ol className="space-y-8">
@@ -751,9 +815,11 @@ export function SyncSetupPage() {
             Map each practitioner
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-karsa-muted">
-            On the Calendar sync page, choose which Google calendar belongs to
-            each employee. New bookings write to that calendar; changes in
-            either place stay aligned.
+            On the{" "}
+            <PageLink to="/dashboard/settings/google">Google Calendar</PageLink>{" "}
+            page, choose which Google calendar belongs to each employee. New
+            bookings write to that calendar; changes in either place stay
+            aligned.
           </p>
           <Link
             to="/dashboard/settings/google"
@@ -772,8 +838,9 @@ export function SyncSetupPage() {
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-karsa-muted">
             Drive sync stores submitted forms and exports in a folder structure
-            per client. Turn it on after Calendar is working so you are not
-            debugging two systems at once.
+            per client. Turn it on after{" "}
+            <PageLink to="/dashboard/settings/google">Calendar</PageLink> is
+            working so you are not debugging two systems at once.
           </p>
           <p className="mt-3 text-sm text-karsa-text">
             Status: <span className="text-karsa-muted">Off / not configured</span>
@@ -800,7 +867,9 @@ export function SyncSetupPage() {
             Cancellations and reschedules update the same event when possible.
           </li>
           <li>
-            Busy times from Google help block slots on public Book Now and staff
+            Busy times from Google help block slots on public{" "}
+            <PageLink to="/dashboard/bookings/new">Book Now</PageLink> and staff
+            booking.
             booking.
           </li>
           <li>
@@ -820,7 +889,14 @@ export function GooglePage() {
     <PageChrome
       eyebrow="Settings · Integrations"
       title="Google Calendar"
-      blurb="Link each staff member to a Google calendar. In the full product, new bookings and changes here show up there too. This demo page explains the idea without a live Google login."
+      blurb={
+        <>
+          Link each staff member to a Google calendar. In the full product, new
+          bookings and changes here show up there too. This demo page explains
+          the idea without a live Google login. Map people from{" "}
+          <PageLink to="/dashboard/employees">Employees</PageLink>.
+        </>
+      }
       maxWidth="max-w-3xl"
     >
       <div className="border border-karsa-border-subtle px-4 py-3">
@@ -863,14 +939,21 @@ export function DrivePage() {
     <PageChrome
       eyebrow="Settings · Integrations"
       title="Google Drive"
-      blurb="Optional: save filled-out form PDFs into Google Drive folders. Uses the same Google connection as Calendar. Not connected in this demo."
+      blurb={
+        <>
+          Optional: save filled-out form PDFs into Google Drive folders. Uses
+          the same Google connection as{" "}
+          <PageLink to="/dashboard/settings/google">Google Calendar</PageLink>.
+          Not connected in this demo.
+        </>
+      }
       maxWidth="max-w-3xl"
     >
       <p className="text-sm text-karsa-muted">
         Connect Google first under{" "}
         <Link
           to="/dashboard/settings/google"
-          className="text-karsa-accent-strong underline"
+          className="text-karsa-accent-strong underline-offset-4 hover:underline"
         >
           Settings → Google Calendar
         </Link>
@@ -1004,17 +1087,11 @@ export function BillingPage() {
     <PageChrome
       eyebrow="Settings"
       title="Billing"
-      blurb="Your Karsaro software plan for this studio (not client payments). Plan changes will live here in the full product; this demo shows where that screen belongs."
-      maxWidth="max-w-3xl"
+      blurb="Your Karsaro software plan for this studio (not client payments). Client card charges never go through Karsaro — this page is only the subscription."
+      maxWidth="max-w-5xl"
     >
-      <FullVersionNote more="Business owners will change the studio’s Karsaro plan here (trial / starter / growth). Client card charges are never processed inside Karsaro — only the software subscription." />
-      <section className="rounded-md border border-karsa-border-subtle p-4">
-        <h2 className="text-sm font-medium text-karsa-text">Current plan</h2>
-        <p className="mt-2 font-display text-2xl text-karsa-text">Trial</p>
-        <p className="mt-2 text-xs text-karsa-faint">
-          Placeholder in the portfolio demo.
-        </p>
-      </section>
+      <FullVersionNote more="The live app will run checkout here. This demo uses the same Solo / Studio / Practice prices, extra-seat math, and annual first-month-free billing so you can see how a 3–4 person team stays on Solo." />
+      <BillingPlans currentPlanId="trial" />
     </PageChrome>
   );
 }
