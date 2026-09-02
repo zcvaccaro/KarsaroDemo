@@ -1090,7 +1090,7 @@ export function BillingPage() {
       blurb="Your Karsaro software plan for this studio (not client payments). Client card charges never go through Karsaro — this page is only the subscription."
       maxWidth="max-w-5xl"
     >
-      <FullVersionNote more="The live app will run checkout here. This demo uses the same Solo / Studio / Practice prices, extra-seat math, and annual first-month-free billing so you can see how a 3–4 person team stays on Solo." />
+      <FullVersionNote more="The live app will run checkout here. This demo uses the same Solo / Studio / Practice prices, extra-seat and extra-location math, and annual first-month-free billing." />
       <BillingPlans currentPlanId="trial" />
     </PageChrome>
   );
