@@ -21,6 +21,13 @@ import {
   upsertClient,
 } from "../lib/store";
 import { useDemoStore } from "../lib/use-demo-store";
+import {
+  filterEmployeesForLocation,
+  filterServicesForLocation,
+  isAppointmentAtLocation,
+  isServiceAvailableAtLocation,
+  useDemoLocationScope,
+} from "../lib/location-filter";
 
 function PageChrome({
   eyebrow,
@@ -72,15 +79,26 @@ function formatPrefDate(iso: string | null) {
 
 export function BookNowPage() {
   const { clients, employees, services } = useDemoStore();
+  const { locationId } = useDemoLocationScope();
   const [searchParams] = useSearchParams();
   const [clientId, setClientId] = useState(
     () => searchParams.get("clientId") ?? "",
   );
-  const [serviceId, setServiceId] = useState(services[0]?.id ?? "");
-  const bookableEmployees = employees.filter(isBookableEmployee);
-  const [employeeId, setEmployeeId] = useState(
-    bookableEmployees[0]?.id ?? "",
+  const ANY_EMPLOYEE_ID = "__any__";
+  const scopedServices = useMemo(
+    () => filterServicesForLocation(services, locationId),
+    [locationId, services],
   );
+  const bookableEmployees = useMemo(
+    () =>
+      filterEmployeesForLocation(
+        employees.filter(isBookableEmployee),
+        locationId,
+      ),
+    [employees, locationId],
+  );
+  const [employeeId, setEmployeeId] = useState(ANY_EMPLOYEE_ID);
+  const [serviceId, setServiceId] = useState("");
   const [date, setDate] = useState(todayISO());
   const [time, setTime] = useState("10:00");
   const [done, setDone] = useState(false);
@@ -96,6 +114,21 @@ export function BookNowPage() {
     if (fromUrl) setClientId(fromUrl);
   }, [searchParams]);
 
+  useEffect(() => {
+    if (serviceId && !scopedServices.some((s) => s.id === serviceId)) {
+      setServiceId("");
+    }
+  }, [scopedServices, serviceId]);
+
+  useEffect(() => {
+    if (
+      employeeId !== ANY_EMPLOYEE_ID &&
+      !bookableEmployees.some((e) => e.id === employeeId)
+    ) {
+      setEmployeeId(ANY_EMPLOYEE_ID);
+    }
+  }, [bookableEmployees, employeeId]);
+
   const lookupResults = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return clients;
@@ -106,6 +139,18 @@ export function BookNowPage() {
         c.phone.toLowerCase().includes(q),
     );
   }, [clients, query]);
+
+  const visibleServices = useMemo(() => {
+    if (employeeId === ANY_EMPLOYEE_ID) return scopedServices;
+    const emp = employees.find((e) => e.id === employeeId);
+    const allowed = new Set(emp?.serviceIds ?? []);
+    return scopedServices.filter((s) => allowed.has(s.id));
+  }, [employeeId, employees, scopedServices]);
+
+  const visibleEmployees = useMemo(() => {
+    if (!serviceId) return bookableEmployees;
+    return bookableEmployees.filter((e) => e.serviceIds.includes(serviceId));
+  }, [bookableEmployees, serviceId]);
 
   if (!clientId) {
     return (
@@ -275,31 +320,37 @@ export function BookNowPage() {
     >
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="block text-sm text-karsa-muted">
+          Employee
+          <KarsaSelect
+            aria-label="Employee"
+            value={employeeId}
+            onChange={setEmployeeId}
+            options={[
+              { value: ANY_EMPLOYEE_ID, label: "Select an employee" },
+              ...visibleEmployees.map((e) => ({
+                value: e.id,
+                label: e.name,
+              })),
+            ]}
+            className="mt-1 w-full rounded-md border border-karsa-border bg-karsa-bg px-3 py-2 text-karsa-text"
+            placeholder="Select an employee"
+          />
+        </label>
+        <label className="block text-sm text-karsa-muted">
           Service
           <KarsaSelect
             aria-label="Service"
             value={serviceId}
             onChange={setServiceId}
-            options={services.map((s) => ({
-              value: s.id,
-              label: `${s.name} · ${s.durationMin}m · $${s.price}`,
-            }))}
+            options={[
+              { value: "", label: "Select a service" },
+              ...visibleServices.map((s) => ({
+                value: s.id,
+                label: `${s.name} · ${s.durationMin}m · $${s.price}`,
+              })),
+            ]}
             className="mt-1 w-full rounded-md border border-karsa-border bg-karsa-bg px-3 py-2 text-karsa-text"
-            placeholder="Select service…"
-          />
-        </label>
-        <label className="block text-sm text-karsa-muted">
-          Practitioner
-          <KarsaSelect
-            aria-label="Practitioner"
-            value={employeeId}
-            onChange={setEmployeeId}
-            options={bookableEmployees.map((e) => ({
-              value: e.id,
-              label: e.name,
-            }))}
-            className="mt-1 w-full rounded-md border border-karsa-border bg-karsa-bg px-3 py-2 text-karsa-text"
-            placeholder="Select practitioner…"
+            placeholder="Select a service"
           />
         </label>
         <label className="block text-sm text-karsa-muted">
@@ -340,12 +391,16 @@ export function BookNowPage() {
           onClick={() => {
             const [hh, mm] = time.split(":").map(Number);
             const svc = services.find((s) => s.id === serviceId);
-            if (!serviceId || !employeeId || Number.isNaN(hh) || Number.isNaN(mm)) {
+            const resolvedEmployeeId =
+              employeeId === ANY_EMPLOYEE_ID
+                ? (visibleEmployees[0]?.id ?? "")
+                : employeeId;
+            if (!serviceId || !resolvedEmployeeId || Number.isNaN(hh) || Number.isNaN(mm)) {
               return;
             }
             upsertAppointment({
               id: `a-${Date.now()}`,
-              employeeId,
+              employeeId: resolvedEmployeeId,
               clientId,
               serviceId,
               date,
@@ -376,10 +431,19 @@ export function BookNowPage() {
 
 export function WaitlistPage() {
   const { waitlistEntries, clients, services } = useDemoStore();
+  const { locationId } = useDemoLocationScope();
 
   const rows = useMemo(() => {
     return waitlistEntries
       .filter((e) => e.status === "waiting" || e.status === "offered")
+      .filter((e) =>
+        isServiceAvailableAtLocation(
+          e.serviceId
+            ? services.find((s) => s.id === e.serviceId)?.locationIds
+            : undefined,
+          locationId,
+        ),
+      )
       .map((e) => {
         const client = clients.find((c) => c.id === e.clientId);
         const service = services.find((s) => s.id === e.serviceId);
@@ -389,7 +453,7 @@ export function WaitlistPage() {
           serviceName: service?.name ?? "Any service",
         };
       });
-  }, [waitlistEntries, clients, services]);
+  }, [waitlistEntries, clients, services, locationId]);
 
   return (
     <PageChrome
@@ -438,15 +502,27 @@ export function WaitlistPage() {
 }
 
 export function ClientsPage() {
-  const { clients } = useDemoStore();
+  const { clients, appointments, services } = useDemoStore();
+  const { locationId } = useDemoLocationScope();
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<"recent" | "alpha">("alpha");
 
+  const locationClients = useMemo(() => {
+    if (!locationId) return clients;
+    const ids = new Set(
+      appointments
+        .filter((a) => appointmentStatus(a) !== "cancelled")
+        .filter((a) => isAppointmentAtLocation(a, locationId, services))
+        .map((a) => a.clientId),
+    );
+    return clients.filter((c) => ids.has(c.id));
+  }, [appointments, clients, locationId, services]);
+
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase();
-    let rows = clients;
+    let rows = locationClients;
     if (query) {
-      rows = clients.filter(
+      rows = locationClients.filter(
         (c) =>
           clientDisplayName(c).toLowerCase().includes(query) ||
           c.email.toLowerCase().includes(query) ||
@@ -464,7 +540,7 @@ export function ClientsPage() {
       sorted.reverse();
     }
     return sorted;
-  }, [clients, q, sort]);
+  }, [locationClients, q, sort]);
 
   return (
     <PageChrome
@@ -537,7 +613,7 @@ export function ClientsPage() {
           ))}
           {filtered.length === 0 ? (
             <li className="text-sm text-karsa-faint">
-              {clients.length === 0
+              {locationClients.length === 0
                 ? "No clients yet. They appear here after a booking."
                 : "No clients match that filter."}
             </li>
@@ -550,6 +626,11 @@ export function ClientsPage() {
 
 export function EmployeesPage() {
   const { employees } = useDemoStore();
+  const { locationId } = useDemoLocationScope();
+  const scopedEmployees = useMemo(
+    () => filterEmployeesForLocation(employees, locationId),
+    [employees, locationId],
+  );
 
   return (
     <PageChrome
@@ -567,7 +648,7 @@ export function EmployeesPage() {
     >
       <FullVersionNote more="Staff profiles support weekly hours per location, service assignments, calendar sync mapping, and role-based access that this demo only sketches." />
       <div className="space-y-3">
-        {employees.map((e) => (
+        {scopedEmployees.map((e) => (
           <Link
             key={e.id}
             to={`/dashboard/employees/${e.id}`}
@@ -724,9 +805,10 @@ export function BusinessPage() {
               to="/dashboard/settings/email"
               className="text-karsa-accent-strong underline-offset-4 hover:underline"
             >
-              customized reminder email
+              customized email reminder
             </Link>{" "}
-            is sent this many hours before the appointment start time.
+            (and SMS reminder on Studio and Practice) is sent this many hours
+            before the appointment start time.
           </p>
         </div>
         <div>
@@ -997,6 +1079,7 @@ export function MetricsPage() {
   const range = searchParams.get("range") ?? "month";
   const employeeFilter = searchParams.get("employeeId") || null;
   const { appointments, services, employees } = useDemoStore();
+  const { locationId } = useDemoLocationScope();
   const { start, end } = rangeBounds(range);
 
   const points = appointments
@@ -1005,6 +1088,7 @@ export function MetricsPage() {
       const t = new Date(y, m - 1, d).getTime();
       return t >= start.getTime() && t < end.getTime();
     })
+    .filter((a) => isAppointmentAtLocation(a, locationId, services))
     .map((a) => {
       const service = services.find((s) => s.id === a.serviceId);
       return {
@@ -1018,18 +1102,22 @@ export function MetricsPage() {
       };
     });
 
-  const serviceMeta = services.map((s) => ({
-    id: s.id,
-    name: s.name,
-    color: getServiceColor(s.colorId).swatch,
-    active: s.active !== false,
-    listPrice: s.price,
-  }));
+  const serviceMeta = filterServicesForLocation(services, locationId).map(
+    (s) => ({
+      id: s.id,
+      name: s.name,
+      color: getServiceColor(s.colorId).swatch,
+      active: s.active !== false,
+      listPrice: s.price,
+    }),
+  );
 
-  const employeeMeta = employees.map((e) => ({
-    id: e.id,
-    label: e.name,
-  }));
+  const employeeMeta = filterEmployeesForLocation(employees, locationId).map(
+    (e) => ({
+      id: e.id,
+      label: e.name,
+    }),
+  );
 
   return (
     <div className="mx-auto max-w-6xl">

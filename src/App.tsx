@@ -17,6 +17,7 @@ import {
   WaitlistDetailPage,
 } from "./pages/ProfilePages";
 import { ServicesPage } from "./pages/ServicesPage";
+import { PublicBookOfferPage } from "./pages/PublicBookOfferPage";
 import {
   BillingPage,
   BookNowPage,
@@ -37,6 +38,7 @@ export default function App() {
     <HashRouter>
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/book/:slug" element={<PublicBookOfferPage />} />
         <Route element={<ShellLayout />}>
           <Route path="/dashboard" element={<OverviewPage />} />
           <Route path="/dashboard/calendar" element={<CalendarPage />} />

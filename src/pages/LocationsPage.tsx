@@ -261,7 +261,7 @@ export function LocationsPage() {
   });
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="mx-auto max-w-6xl">
       <p className="text-xs font-medium tracking-[0.16em] text-karsa-faint uppercase">
         People
       </p>
@@ -278,16 +278,20 @@ export function LocationsPage() {
         addLabel="Add location"
         disabled
         list={
-          <div className="space-y-6">
+          <div className="grid gap-6 sm:grid-cols-2">
             {sorted.length === 0 ? (
-              <p className="text-center text-sm text-karsa-faint">
+              <p className="col-span-full text-center text-sm text-karsa-faint">
                 No locations yet.
               </p>
             ) : (
-              sorted.map((location) => (
+              sorted.map((location, index) => (
                 <div
                   key={location.id}
-                  className="border border-karsa-border-subtle p-4"
+                  className={`border border-karsa-border-subtle p-4 ${
+                    sorted.length % 2 === 1 && index === sorted.length - 1
+                      ? "sm:col-span-2"
+                      : ""
+                  }`}
                 >
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <p className="font-medium text-karsa-text">{location.name}</p>

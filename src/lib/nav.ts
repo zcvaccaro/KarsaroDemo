@@ -118,7 +118,7 @@ export const demoNav: NavGroup[] = [
       },
       {
         href: "/dashboard/settings/email",
-        label: "Email",
+        label: "Messaging",
         description: "Templates and payment link",
         mode: "interactive",
       },

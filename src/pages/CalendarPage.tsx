@@ -42,6 +42,7 @@ import {
   isStartWithinHours,
   isToday,
   localDateTimeIso,
+  mergeLocationHours,
   minutesFromGridStart,
   minutesToPixelY,
   parseYmd,
@@ -65,9 +66,18 @@ import {
   type Appointment,
   type Client,
   type Employee,
+  type Location,
+  type Service,
   type WaitlistEntry,
 } from "../lib/store";
 import { useDemoStore } from "../lib/use-demo-store";
+import {
+  filterEmployeesForLocation,
+  filterServicesForLocation,
+  isAppointmentAtLocation,
+  isServiceAvailableAtLocation,
+  useDemoLocationScope,
+} from "../lib/location-filter";
 
 export type CalendarView = "day" | "week" | "month";
 
@@ -239,11 +249,24 @@ function gridClickInfo(
   };
 }
 
+function locationNameForService(
+  service: Pick<Service, "locationIds"> | undefined,
+  locations: Location[],
+) {
+  const ids = service?.locationIds ?? [];
+  if (ids.length === 0) {
+    return locations.length === 1 ? locations[0]!.name : null;
+  }
+  return locations.find((location) => location.id === ids[0])?.name ?? null;
+}
+
 function toCalendarAppointments(
   appointments: Appointment[],
   employees: Employee[],
   clients: Client[],
-  services: { id: string; name: string; colorId?: string }[],
+  services: Service[],
+  locations: Location[],
+  showLocation: boolean,
 ): CalendarAppointment[] {
   return appointments.map((a) => {
     const emp = employees.find((e) => e.id === a.employeeId);
@@ -259,6 +282,9 @@ function toCalendarAppointments(
       employeeId: a.employeeId,
       serviceName: service?.name ?? "Service",
       colorId: service?.colorId ?? DEFAULT_SERVICE_COLOR_ID,
+      locationName: showLocation
+        ? locationNameForService(service, locations)
+        : null,
     };
   });
 }
@@ -1168,6 +1194,7 @@ function MonthView({
 
 export function CalendarPage() {
   const state = useDemoStore();
+  const { locationId } = useDemoLocationScope();
   const [searchParams, setSearchParams] = useSearchParams();
   const view = parseView(searchParams.get("view"));
   const anchorYmd =
@@ -1182,23 +1209,45 @@ export function CalendarPage() {
     }
   }, [anchorYmd]);
 
+  const scopedEmployees = useMemo(
+    () => filterEmployeesForLocation(state.employees, locationId),
+    [locationId, state.employees],
+  );
+  const scopedServices = useMemo(
+    () => filterServicesForLocation(state.services, locationId),
+    [locationId, state.services],
+  );
+
   const locationHours = useMemo<CalendarLocationHour[]>(() => {
-    const hours = state.locations[0]?.hours;
-    if (!hours?.length) {
-      return Array.from({ length: 7 }, (_, dayOfWeek) => ({
-        dayOfWeek,
-        startTime: "09:00",
-        endTime: "17:00",
-        closed: dayOfWeek === 0,
+    const toHours = (hours: Location["hours"] | undefined): CalendarLocationHour[] =>
+      (hours ?? []).map((h) => ({
+        dayOfWeek: h.dayOfWeek,
+        startTime: h.startTime,
+        endTime: h.endTime,
+        closed: h.closed,
       }));
+
+    if (locationId) {
+      const hours = toHours(
+        state.locations.find((l) => l.id === locationId)?.hours,
+      );
+      if (hours.length) return hours;
+    } else {
+      const merged = mergeLocationHours(
+        state.locations
+          .filter((location) => location.active)
+          .map((location) => toHours(location.hours)),
+      );
+      if (merged.length) return merged;
     }
-    return hours.map((h) => ({
-      dayOfWeek: h.dayOfWeek,
-      startTime: h.startTime,
-      endTime: h.endTime,
-      closed: h.closed,
+
+    return Array.from({ length: 7 }, (_, dayOfWeek) => ({
+      dayOfWeek,
+      startTime: "09:00",
+      endTime: "17:00",
+      closed: dayOfWeek === 0,
     }));
-  }, [state.locations]);
+  }, [locationId, state.locations]);
   const hoursMode: "location" | "employee" = employeeId ? "employee" : "location";
   const gridBounds = useMemo(
     () => computeLocationGridBounds(locationHours),
@@ -1208,12 +1257,26 @@ export function CalendarPage() {
   const calendarAppointments = useMemo(
     () =>
       toCalendarAppointments(
-        state.appointments.filter(showsOnCalendar),
+        state.appointments
+          .filter(showsOnCalendar)
+          .filter((a) =>
+            isAppointmentAtLocation(a, locationId, state.services),
+          ),
         state.employees,
         state.clients,
         state.services,
+        state.locations,
+        !locationId,
       ).filter((a) => !employeeId || a.employeeId === employeeId),
-    [employeeId, state.appointments, state.clients, state.employees, state.services],
+    [
+      employeeId,
+      locationId,
+      state.appointments,
+      state.clients,
+      state.employees,
+      state.locations,
+      state.services,
+    ],
   );
 
   const calendarWaitlist = useMemo<WaitlistChip[]>(
@@ -1221,6 +1284,14 @@ export function CalendarPage() {
       state.waitlistEntries
         .filter((e) => e.status === "waiting" || e.status === "offered")
         .filter((e) => e.preferredDate1)
+        .filter((e) =>
+          isServiceAvailableAtLocation(
+            e.serviceId
+              ? state.services.find((s) => s.id === e.serviceId)?.locationIds
+              : undefined,
+            locationId,
+          ),
+        )
         .map((e) => {
           const client = state.clients.find((c) => c.id === e.clientId);
           const service = e.serviceId
@@ -1234,7 +1305,7 @@ export function CalendarPage() {
             status: e.status,
           };
         }),
-    [state.waitlistEntries, state.clients, state.services],
+    [locationId, state.waitlistEntries, state.clients, state.services],
   );
 
   const [bookModal, setBookModal] = useState<BookModalDefaults | null>(null);
@@ -1344,7 +1415,7 @@ export function CalendarPage() {
         >
           All employees
         </Link>
-        {state.employees.map((e) => (
+        {scopedEmployees.map((e) => (
           <Link
             key={e.id}
             to={buildHref({
@@ -1412,9 +1483,9 @@ export function CalendarPage() {
       {bookModal ? (
         <CalendarBookModal
           defaults={bookModal}
-          employees={state.employees}
+          employees={scopedEmployees}
           clients={state.clients}
-          services={state.services}
+          services={scopedServices}
           onClose={() => setBookModal(null)}
           onSave={(form) => {
             const [hh, mm] = form.time.split(":").map(Number);

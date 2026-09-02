@@ -1,6 +1,7 @@
-import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, Outlet, useLocation } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { KarsaroLogo } from "./Logo";
+import { HistoryNav } from "./HistoryNav";
 import { demoNav, isNavActive } from "../lib/nav";
 import { orderQuickActions } from "../lib/quick-actions";
 import { resetDemoState } from "../lib/store";
@@ -14,38 +15,13 @@ const CHIP_LABEL: Record<string, string> = {
   "/dashboard/waitlist": "Waitlist",
   "/dashboard/settings": "Business",
   "/dashboard/locations": "Locations",
-  "/dashboard/settings/email": "Emails",
+  "/dashboard/settings/email": "Messaging",
   "/dashboard/services": "Services",
   "/dashboard/forms": "Forms",
   "/dashboard/clients": "Clients",
   "/dashboard/employees": "Employees",
   "/dashboard/settings/sync": "Sync",
 };
-
-function HistoryNav() {
-  const navigate = useNavigate();
-
-  return (
-    <div className="mb-4 flex items-center gap-2">
-      <button
-        type="button"
-        onClick={() => navigate(-1)}
-        className="rounded-md border border-karsa-border px-3 py-1.5 text-xs text-karsa-muted transition-colors hover:bg-karsa-surface hover:text-karsa-text"
-        aria-label="Go back"
-      >
-        ← Back
-      </button>
-      <button
-        type="button"
-        onClick={() => navigate(1)}
-        className="rounded-md border border-karsa-border px-3 py-1.5 text-xs text-karsa-muted transition-colors hover:bg-karsa-surface hover:text-karsa-text"
-        aria-label="Go forward"
-      >
-        Forward →
-      </button>
-    </div>
-  );
-}
 
 function DemoSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const { pathname } = useLocation();
@@ -152,13 +128,13 @@ export function ShellLayout() {
   }, [menuOpen]);
 
   return (
-    <div className="flex min-h-screen bg-karsa-bg text-karsa-text">
-      <div className="sticky top-0 hidden h-screen md:block">
+    <div className="flex h-dvh bg-karsa-bg text-karsa-text">
+      <div className="hidden h-full shrink-0 md:block">
         <DemoSidebar />
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <div className="sticky top-0 z-40 md:static">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <div className="z-40 shrink-0 bg-karsa-bg">
           <div className="border-b border-karsa-accent/30 bg-karsa-accent-soft px-4 py-2 text-sm md:px-10">
             <p>
               <span className="font-medium text-karsa-accent-strong">Demo</span>
@@ -204,6 +180,10 @@ export function ShellLayout() {
               </Link>
             ))}
           </nav>
+
+          <div className="border-b border-karsa-border-subtle px-5 py-3 md:px-10">
+            <HistoryNav />
+          </div>
         </div>
 
         {menuOpen ? (
@@ -220,8 +200,10 @@ export function ShellLayout() {
           </div>
         ) : null}
 
-        <main className="flex-1 px-5 py-8 md:px-10 md:py-10">
-          <HistoryNav />
+        <main
+          id="dashboard-main"
+          className="min-h-0 flex-1 overflow-y-auto px-5 pt-8 pb-8 md:px-10 md:pt-10 md:pb-10 has-[[data-flush-sticky]]:pt-0 has-[[data-flush-sticky]]:md:pt-0"
+        >
           <EntityModalsProvider>
             <Outlet />
           </EntityModalsProvider>

@@ -234,6 +234,10 @@ export function QuickActionsGrid({
                 onDragEnd={() => clearDrag()}
                 className={`h-full transition-transform duration-200 ease-out ${nudge} ${
                   isDragging ? "scale-[0.97] opacity-30" : ""
+                } ${
+                  editing
+                    ? "!cursor-grabbing"
+                    : "!cursor-pointer"
                 }`}
               >
                 <Link
@@ -244,8 +248,8 @@ export function QuickActionsGrid({
                   }}
                   className={`group flex h-full flex-col items-center justify-center gap-2.5 rounded-xl border bg-karsa-surface/50 px-3 py-5 text-center transition-all duration-200 hover:border-karsa-accent/35 hover:bg-karsa-surface-hover ${
                     editing
-                      ? "cursor-grab border-karsa-accent/30 active:cursor-grabbing"
-                      : "cursor-pointer border-karsa-border-subtle hover:-translate-y-0.5"
+                      ? "!cursor-grabbing border-karsa-accent/30"
+                      : "!cursor-pointer border-karsa-border-subtle hover:-translate-y-0.5"
                   }`}
                 >
                   <ActionIcon name={action.icon} />

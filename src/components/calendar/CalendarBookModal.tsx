@@ -18,6 +18,8 @@ export type BookModalDefaults = {
   employeeId: string | null;
 };
 
+const ANY_EMPLOYEE_ID = "__any__";
+
 const fieldClass =
   "mt-1 w-full rounded-md border border-karsa-border bg-karsa-bg px-3 py-2 text-sm text-karsa-text outline-none ring-karsa-accent/40 focus:ring-2";
 
@@ -52,14 +54,14 @@ export function CalendarBookModal({
   );
   const [date, setDate] = useState(defaults.date);
   const [time, setTime] = useState(defaults.time);
-  const [serviceId, setServiceId] = useState(services[0]?.id ?? "");
+  const [serviceId, setServiceId] = useState("");
   const [employeeId, setEmployeeId] = useState(
     defaults.employeeId &&
       employees.some(
         (e) => e.id === defaults.employeeId && isBookableEmployee(e),
       )
       ? defaults.employeeId
-      : (employees.find(isBookableEmployee)?.id ?? ""),
+      : ANY_EMPLOYEE_ID,
   );
   const [newFirst, setNewFirst] = useState("");
   const [newLast, setNewLast] = useState("");
@@ -90,14 +92,31 @@ export function CalendarBookModal({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const employeeOptions = employees.filter(isBookableEmployee).map((e) => ({
-    value: e.id,
-    label: e.name,
-  }));
-  const serviceOptions = services.map((s) => ({
-    value: s.id,
-    label: `${s.name} (${s.durationMin}m)`,
-  }));
+  const bookableEmployees = employees.filter(isBookableEmployee);
+  const visibleEmployees = useMemo(() => {
+    if (!serviceId) return bookableEmployees;
+    return bookableEmployees.filter((e) => e.serviceIds.includes(serviceId));
+  }, [bookableEmployees, serviceId]);
+  const visibleServices = useMemo(() => {
+    if (employeeId === ANY_EMPLOYEE_ID) return services;
+    const emp = employees.find((e) => e.id === employeeId);
+    const allowed = new Set(emp?.serviceIds ?? []);
+    return services.filter((s) => allowed.has(s.id));
+  }, [employeeId, employees, services]);
+  const employeeOptions = [
+    { value: ANY_EMPLOYEE_ID, label: "Select an employee" },
+    ...visibleEmployees.map((e) => ({
+      value: e.id,
+      label: e.name,
+    })),
+  ];
+  const serviceOptions = [
+    { value: "", label: "Select a service" },
+    ...visibleServices.map((s) => ({
+      value: s.id,
+      label: `${s.name} (${s.durationMin}m)`,
+    })),
+  ];
 
   function resolveClientId(): string | null {
     if (lockedClientId) return lockedClientId;
@@ -287,7 +306,7 @@ export function CalendarBookModal({
               onChange={setEmployeeId}
               options={employeeOptions}
               className={fieldClass}
-              placeholder="Select practitioner…"
+              placeholder="Select an employee"
             />
           </label>
           <label className="block text-xs text-karsa-faint">
@@ -298,7 +317,7 @@ export function CalendarBookModal({
               onChange={setServiceId}
               options={serviceOptions}
               className={fieldClass}
-              placeholder="Select service…"
+              placeholder="Select a service"
             />
           </label>
         </div>
@@ -315,11 +334,15 @@ export function CalendarBookModal({
             type="button"
             onClick={() => {
               const resolvedClientId = resolveClientId();
-              if (!resolvedClientId || !serviceId || !employeeId) return;
+              const resolvedEmployeeId =
+                employeeId === ANY_EMPLOYEE_ID
+                  ? (visibleEmployees[0]?.id ?? "")
+                  : employeeId;
+              if (!resolvedClientId || !serviceId || !resolvedEmployeeId) return;
               onSave({
                 clientId: resolvedClientId,
                 serviceId,
-                employeeId,
+                employeeId: resolvedEmployeeId,
                 durationMin: service?.durationMin ?? 60,
                 date,
                 time,

@@ -178,6 +178,7 @@ export type CalendarAppointment = {
   employeeId: string | null;
   serviceName: string;
   colorId?: string | null;
+  locationName?: string | null;
 };
 
 export type CalendarLocationHour = {
@@ -192,6 +193,54 @@ export const CLOSED_HOURS_OVERLAY_CLASS = "bg-[rgba(154,74,28,0.1)]";
 export function parseHmToMinutes(hm: string): number {
   const [h, m] = hm.split(":").map(Number);
   return (h || 0) * 60 + (m || 0);
+}
+
+function hmFromMinutes(mins: number): string {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+export function mergeLocationHours(
+  hoursByLocation: CalendarLocationHour[][],
+): CalendarLocationHour[] {
+  const participating = hoursByLocation.filter((hours) => hours.length > 0);
+  if (participating.length === 0) return [];
+  if (participating.length === 1) return participating[0] ?? [];
+
+  const days = new Set<number>();
+  for (const hours of participating) {
+    for (const hour of hours) days.add(hour.dayOfWeek);
+  }
+
+  return [...days]
+    .sort((a, b) => a - b)
+    .map((dayOfWeek) => {
+      const rows = participating.flatMap((hours) =>
+        hours.filter((hour) => hour.dayOfWeek === dayOfWeek),
+      );
+      const open = rows.filter((hour) => !hour.closed);
+      if (open.length === 0) {
+        return {
+          dayOfWeek,
+          startTime: rows[0]?.startTime ?? "09:00",
+          endTime: rows[0]?.endTime ?? "17:00",
+          closed: true,
+        };
+      }
+      let start = parseHmToMinutes(open[0]!.startTime);
+      let end = parseHmToMinutes(open[0]!.endTime);
+      for (const hour of open) {
+        start = Math.min(start, parseHmToMinutes(hour.startTime));
+        end = Math.max(end, parseHmToMinutes(hour.endTime));
+      }
+      return {
+        dayOfWeek,
+        startTime: hmFromMinutes(start),
+        endTime: hmFromMinutes(end),
+        closed: false,
+      };
+    });
 }
 
 export function getLocationHourForDay(

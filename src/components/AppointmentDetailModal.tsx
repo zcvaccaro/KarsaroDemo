@@ -221,6 +221,17 @@ export function AppointmentDetailModal({
               </dd>
             </div>
             <div>
+              <dt className="text-xs text-karsa-faint uppercase">Location</dt>
+              <dd className="mt-1 text-karsa-text">
+                {service?.locationIds
+                  .map(
+                    (id) => store.locations.find((l) => l.id === id)?.name,
+                  )
+                  .filter(Boolean)
+                  .join(", ") || "—"}
+              </dd>
+            </div>
+            <div>
               <dt className="text-xs text-karsa-faint uppercase">Time</dt>
               <dd className="mt-1 text-karsa-text">
                 {formatTime(startIso)} – {formatTime(endIso)}

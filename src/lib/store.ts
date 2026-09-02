@@ -12,6 +12,8 @@ export type Employee = {
   role: "admin" | "receptionist" | "practitioner";
   bookable: boolean;
   serviceIds: string[];
+  /** Empty = works at every location. */
+  locationIds: string[];
   availability: EmployeeAvailability[];
 };
 
@@ -746,6 +748,13 @@ function defaultEmailTemplates(businessName = "Sample Studio"): EmailTemplate[] 
       active: true,
     },
     {
+      id: "et-sms-reminder",
+      templateType: "sms_reminder",
+      subject: "SMS reminder",
+      htmlContent: `<p>Hi {{client_name}}, reminder: {{service_name}} with {{employee_name}} on {{start_time}}. — {{business_name}}</p>`,
+      active: true,
+    },
+    {
       id: "et-cancellation",
       templateType: "cancellation",
       subject: `Appointment cancelled — ${businessName}`,
@@ -761,6 +770,7 @@ function defaultEmailTemplates(businessName = "Sample Studio"): EmailTemplate[] 
       htmlContent: `<p>Hi {{client_name}},</p>
 <p>{{business_name}} wanted you to know a slot may be open{{service_name_block}}.</p>
 <p>{{notes_block}}</p>
+<p><a href="{{book_now_url}}" style="display:inline-block;padding:12px 20px;background:#1c1917;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:500;">Book this appointment</a></p>
 <p>— {{business_name}}</p>`,
       active: true,
     },
@@ -803,6 +813,23 @@ export function createSeedState(): DemoState {
     active: true,
     hours: defaultLocationHours(),
   };
+  const eastClinic: Location = {
+    id: "loc-east",
+    name: "East Clinic",
+    address1: "88 Belmont St",
+    city: "Portland",
+    state: "OR",
+    postalCode: "97214",
+    phone: "(503) 555-0190",
+    timezone: "America/New_York",
+    active: true,
+    hours: Array.from({ length: 7 }, (_, dayOfWeek) => ({
+      dayOfWeek,
+      startTime: "10:00",
+      endTime: "18:00",
+      closed: dayOfWeek === 0,
+    })),
+  };
 
   const services = [
     withDerivedService({
@@ -817,7 +844,7 @@ export function createSeedState(): DemoState {
         { durationMinutes: 60, price: 90, label: null },
         { durationMinutes: 90, price: 125, label: "Extended" },
       ],
-      locationIds: [mainStudio.id],
+      locationIds: [mainStudio.id, eastClinic.id],
     }),
     withDerivedService({
       id: "s2",
@@ -827,7 +854,7 @@ export function createSeedState(): DemoState {
       colorId: "7",
       active: true,
       options: [{ durationMinutes: 90, price: 130, label: null }],
-      locationIds: [mainStudio.id],
+      locationIds: [mainStudio.id, eastClinic.id],
     }),
     withDerivedService({
       id: "s3",
@@ -847,7 +874,7 @@ export function createSeedState(): DemoState {
       colorId: "9",
       active: true,
       options: [{ durationMinutes: 75, price: 150, label: null }],
-      locationIds: [mainStudio.id],
+      locationIds: [eastClinic.id],
     }),
   ];
   const allServiceIds = services.map((s) => s.id);
@@ -861,6 +888,7 @@ export function createSeedState(): DemoState {
       role: "practitioner",
       bookable: true,
       serviceIds: [...allServiceIds],
+      locationIds: [],
       availability: weekHours.map((row) => ({ ...row })),
     },
     {
@@ -870,6 +898,7 @@ export function createSeedState(): DemoState {
       role: "practitioner",
       bookable: true,
       serviceIds: [...allServiceIds],
+      locationIds: [],
       availability: weekHours.map((row) => ({ ...row })),
     },
     {
@@ -879,6 +908,7 @@ export function createSeedState(): DemoState {
       role: "practitioner",
       bookable: true,
       serviceIds: ["s1", "s2", "s3"],
+      locationIds: [mainStudio.id],
       availability: weekHours.map((row) => ({ ...row })),
     },
     {
@@ -888,6 +918,7 @@ export function createSeedState(): DemoState {
       role: "practitioner",
       bookable: true,
       serviceIds: ["s2", "s3", "s4"],
+      locationIds: [eastClinic.id],
       availability: weekHours.map((row) => ({ ...row })),
     },
   ];
@@ -956,7 +987,7 @@ export function createSeedState(): DemoState {
   return {
     employees,
     clients,
-    locations: [mainStudio],
+    locations: [mainStudio, eastClinic],
     services,
     emailTemplates: defaultEmailTemplates("Sample Studio"),
     appointments: buildCurrentMonthAppointments(employees, clients, services),
@@ -1301,6 +1332,11 @@ function normalizeEmployee(
     : seedFallback?.serviceIds?.length
       ? seedFallback.serviceIds
       : defaultServiceIds;
+  const locationIds = Array.isArray(raw.locationIds)
+    ? raw.locationIds.filter((id): id is string => typeof id === "string")
+    : seedFallback?.locationIds
+      ? [...seedFallback.locationIds]
+      : [];
 
   const role: Employee["role"] =
     raw.role === "admin" || raw.role === "receptionist"
@@ -1317,6 +1353,7 @@ function normalizeEmployee(
         ? raw.bookable
         : role === "practitioner",
     serviceIds,
+    locationIds,
     availability,
   };
 }
@@ -1327,7 +1364,14 @@ function normalizeState(raw: Partial<DemoState> | null | undefined): DemoState {
 
   const locations = Array.isArray(raw.locations)
     ? raw.locations.map((l, i) => normalizeLocation(l, seed.locations[i]))
-    : seed.locations;
+    : [...seed.locations];
+  const haveLocationIds = new Set(locations.map((l) => l.id));
+  for (const extra of seed.locations) {
+    if (!haveLocationIds.has(extra.id)) {
+      locations.push(extra);
+      haveLocationIds.add(extra.id);
+    }
+  }
   const defaultLocationIds = locations.map((l) => l.id);
 
   const services = Array.isArray(raw.services)
@@ -1336,11 +1380,18 @@ function normalizeState(raw: Partial<DemoState> | null | undefined): DemoState {
       )
     : seed.services;
 
-  const emailTemplates = Array.isArray(raw.emailTemplates)
-    ? raw.emailTemplates.map((t, i) =>
-        normalizeEmailTemplate(t, seed.emailTemplates[i]),
-      )
-    : seed.emailTemplates;
+  const emailTemplates = (() => {
+    const mapped = Array.isArray(raw.emailTemplates)
+      ? raw.emailTemplates.map((t, i) =>
+          normalizeEmailTemplate(t, seed.emailTemplates[i]),
+        )
+      : seed.emailTemplates;
+    const have = new Set(mapped.map((t) => t.templateType));
+    const missing = seed.emailTemplates.filter(
+      (t) => !have.has(t.templateType),
+    );
+    return missing.length ? [...mapped, ...missing] : mapped;
+  })();
 
   const forms = Array.isArray(raw.forms)
     ? raw.forms.map((f, i) => normalizeForm(f, seed.forms[i]))
@@ -1545,6 +1596,17 @@ export function setEmployeeRole(
       e.id === employeeId
         ? { ...e, role, bookable: nextBookable }
         : e,
+    ),
+  };
+  persist();
+}
+
+export function deleteEmployee(employeeId: string) {
+  state = {
+    ...state,
+    employees: state.employees.filter((e) => e.id !== employeeId),
+    appointments: state.appointments.map((a) =>
+      a.employeeId === employeeId ? { ...a, employeeId: "" } : a,
     ),
   };
   persist();

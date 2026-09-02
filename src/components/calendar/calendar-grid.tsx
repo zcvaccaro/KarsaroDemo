@@ -152,10 +152,16 @@ export function AppointmentBlock({
             {appt.serviceName}
           </p>
           <p className="truncate text-xs text-karsa-faint">{appt.employeeName}</p>
+          {appt.locationName ? (
+            <p className="truncate text-xs text-karsa-faint">
+              {appt.locationName}
+            </p>
+          ) : null}
         </>
       ) : (
         <p className="truncate text-[10px] leading-tight text-karsa-muted">
           {appt.serviceName}
+          {appt.locationName ? ` · ${appt.locationName}` : ""}
         </p>
       )}
     </div>

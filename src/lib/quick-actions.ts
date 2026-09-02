@@ -31,7 +31,7 @@ export const DASHBOARD_QUICK_ACTIONS = [
   },
   {
     href: "/dashboard/settings/email",
-    label: "Emails",
+    label: "Messaging",
     icon: "email",
   },
   {

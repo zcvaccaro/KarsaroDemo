@@ -729,9 +729,16 @@ export function EmployeeProfilePage() {
   );
 }
 
+function fillDemoTags(template: string, tags: Record<string, string>) {
+  return template.replace(/\{\{([^}]+)\}\}/g, (_, key: string) => tags[key.trim()] ?? "");
+}
+
 export function WaitlistDetailPage() {
   const { id } = useParams();
-  const { waitlistEntries, clients, services, employees } = useDemoStore();
+  const { waitlistEntries, clients, services, employees, emailTemplates } =
+    useDemoStore();
+  const [notifyOpen, setNotifyOpen] = useState(false);
+  const [notifySent, setNotifySent] = useState(false);
   const entry = waitlistEntries.find((e) => e.id === id);
 
   if (!entry) {
@@ -789,6 +796,16 @@ export function WaitlistDetailPage() {
       </section>
 
       <section className="mt-6 flex flex-wrap gap-3">
+        <button
+          type="button"
+          className="rounded-md border border-karsa-border px-4 py-2 text-sm text-karsa-text hover:border-karsa-accent"
+          onClick={() => {
+            setNotifySent(false);
+            setNotifyOpen(true);
+          }}
+        >
+          Send waitlist email
+        </button>
         <Link
           to={`/dashboard/bookings/new?clientId=${entry.clientId}`}
           className="rounded-md bg-karsa-accent px-4 py-2 text-sm font-medium text-karsa-bg"
@@ -808,6 +825,108 @@ export function WaitlistDetailPage() {
           Open client profile
         </Link>
       </section>
+
+      {notifyOpen ? (
+        <DemoWaitlistNotify
+          to={client?.email || "(no email on file)"}
+          subject={fillDemoTags(
+            emailTemplates.find((t) => t.templateType === "waitlist")?.subject ??
+              "An opening may be available",
+            {
+              client_name: client ? clientDisplayName(client) : "there",
+              business_name: "Sample Studio",
+              service_name: service?.name ?? "",
+              duration: service ? `${service.durationMin} min` : "",
+            },
+          )}
+          html={fillDemoTags(
+            emailTemplates.find((t) => t.templateType === "waitlist")
+              ?.htmlContent ?? "<p>A slot may be open.</p>",
+            {
+              client_name: client ? clientDisplayName(client) : "there",
+              business_name: "Sample Studio",
+              service_name: service?.name ?? "",
+              service_name_block: service?.name ? ` for ${service.name}` : "",
+              notes_block: "",
+              duration: service ? `${service.durationMin} min` : "",
+              book_now_url: `#/book/sample-studio?serviceId=${service?.id ?? "s1"}&date=${entry.preferredDate1 ?? todayISO()}`,
+            },
+          )}
+          sent={notifySent}
+          onClose={() => setNotifyOpen(false)}
+          onSend={() => setNotifySent(true)}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function DemoWaitlistNotify({
+  to,
+  subject,
+  html,
+  sent,
+  onClose,
+  onSend,
+}: {
+  to: string;
+  subject: string;
+  html: string;
+  sent: boolean;
+  onClose: () => void;
+  onSend: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg border border-karsa-border bg-karsa-bg p-5 shadow-lg">
+        <h2 className="font-display text-xl text-karsa-text">
+          Send waitlist email?
+        </h2>
+        <p className="mt-2 text-sm text-karsa-muted">
+          This uses your saved waitlist template. In the demo it is not
+          actually emailed.
+        </p>
+        {sent ? (
+          <p className="mt-4 text-sm text-karsa-accent-strong">
+            Preview marked as sent to {to}.
+          </p>
+        ) : (
+          <div className="mt-4 rounded-md border border-karsa-border bg-[#f7f3ec] p-4 text-stone-800">
+            <p className="text-xs tracking-[0.12em] text-stone-400 uppercase">To</p>
+            <p className="mt-1 text-sm text-stone-700">{to}</p>
+            <p className="mt-3 text-xs tracking-[0.12em] text-stone-400 uppercase">
+              Subject
+            </p>
+            <p className="mt-1 text-sm font-medium text-stone-900">{subject}</p>
+            <div
+              className="mt-4 space-y-3 border-t border-stone-200 pt-3 [&_p]:text-sm [&_p]:leading-relaxed [&_p]:text-stone-600"
+              dangerouslySetInnerHTML={{ __html: html }}
+            />
+          </div>
+        )}
+        <div className="mt-6 flex flex-wrap justify-end gap-3">
+          <button
+            type="button"
+            className="rounded-md border border-karsa-border px-4 py-2 text-sm text-karsa-muted hover:bg-karsa-surface"
+            onClick={onClose}
+          >
+            {sent ? "Close" : "Cancel"}
+          </button>
+          {!sent ? (
+            <button
+              type="button"
+              className="rounded-md bg-karsa-accent px-4 py-2 text-sm font-medium text-karsa-bg"
+              onClick={onSend}
+            >
+              Send email
+            </button>
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }

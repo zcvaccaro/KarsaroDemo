@@ -10,6 +10,11 @@ import {
 } from "../lib/calendar-utils";
 import { useDemoStore } from "../lib/use-demo-store";
 import { clientDisplayName, showsOnCalendar, type Appointment } from "../lib/store";
+import {
+  isAppointmentAtLocation,
+  isServiceAvailableAtLocation,
+  useDemoLocationScope,
+} from "../lib/location-filter";
 
 function toLocalIso(date: Date): string {
   const ymd = formatYmd(date);
@@ -48,12 +53,16 @@ function appointmentToCal(
 
 export function OverviewPage() {
   const state = useDemoStore();
+  const { locationId } = useDemoLocationScope();
   const [searchParams] = useSearchParams();
   const weekStartYmd = weekStartParam(searchParams.get("week"));
 
   const weekAppointments = useMemo(() => {
     return state.appointments
       .filter(showsOnCalendar)
+      .filter((a) =>
+        isAppointmentAtLocation(a, locationId, state.services),
+      )
       .map((a) => {
         const client = state.clients.find((c) => c.id === a.clientId);
         const service = state.services.find((s) => s.id === a.serviceId);
@@ -66,12 +75,15 @@ export function OverviewPage() {
         );
       })
       .sort((a, b) => a.startIso.localeCompare(b.startIso));
-  }, [state.appointments, state.clients, state.services, state.employees]);
+  }, [locationId, state.appointments, state.clients, state.services, state.employees]);
 
   const upcomingRows = useMemo(() => {
     const nowMs = Date.now();
     return state.appointments
       .filter(showsOnCalendar)
+      .filter((a) =>
+        isAppointmentAtLocation(a, locationId, state.services),
+      )
       .map((a) => {
         const client = state.clients.find((c) => c.id === a.clientId);
         const service = state.services.find((s) => s.id === a.serviceId);
@@ -91,11 +103,19 @@ export function OverviewPage() {
       .filter((row) => row.start.getTime() >= nowMs)
       .sort((a, b) => a.start.getTime() - b.start.getTime())
       .slice(0, 5);
-  }, [state.appointments, state.clients, state.services]);
+  }, [locationId, state.appointments, state.clients, state.services]);
 
   const waitlistRows = useMemo(() => {
     return [...state.waitlistEntries]
       .filter((w) => w.status !== "cancelled" && w.status !== "booked")
+      .filter((w) =>
+        isServiceAvailableAtLocation(
+          w.serviceId
+            ? state.services.find((s) => s.id === w.serviceId)?.locationIds
+            : undefined,
+          locationId,
+        ),
+      )
       .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
       .slice(0, 5)
       .map((w) => {
@@ -110,7 +130,7 @@ export function OverviewPage() {
           preferredDate1: w.preferredDate1,
         };
       });
-  }, [state.waitlistEntries, state.clients, state.services]);
+  }, [locationId, state.waitlistEntries, state.clients, state.services]);
 
   return (
     <div className="mx-auto max-w-6xl">

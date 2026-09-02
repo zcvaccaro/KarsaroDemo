@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ExpandableAddSection } from "../components/ExpandableAddSection";
 import { PageLink } from "../components/PageLink";
 import { KarsaToggleField } from "../components/karsa-toggle-switch";
@@ -13,6 +13,10 @@ import {
   type Service,
 } from "../lib/store";
 import { useDemoStore } from "../lib/use-demo-store";
+import {
+  filterServicesForLocation,
+  useDemoLocationScope,
+} from "../lib/location-filter";
 
 const inputClass =
   "mt-1 w-full rounded-md border border-karsa-border bg-karsa-bg px-3 py-2 text-sm text-karsa-text outline-none ring-karsa-accent/40 focus:ring-2";
@@ -410,13 +414,18 @@ function EditServiceForm({
 
 export function ServicesPage() {
   const { services, locations } = useDemoStore();
+  const { locationId } = useDemoLocationScope();
   const locationOptions = locations
     .filter((l) => l.active)
     .map((l) => ({ id: l.id, name: l.name }));
-  const sorted = [...services].sort((a, b) => {
-    if (a.active !== b.active) return a.active ? -1 : 1;
-    return a.name.localeCompare(b.name);
-  });
+  const sorted = useMemo(
+    () =>
+      [...filterServicesForLocation(services, locationId)].sort((a, b) => {
+        if (a.active !== b.active) return a.active ? -1 : 1;
+        return a.name.localeCompare(b.name);
+      }),
+    [locationId, services],
+  );
 
   return (
     <div className="mx-auto max-w-4xl">
