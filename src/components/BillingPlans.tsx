@@ -8,8 +8,8 @@ import {
   cheapestPlanId,
   extraLocations,
   extraPractitioners,
-  includedPractitioners,
   monthlyTotalUsd,
+  planUnavailableReason,
   type BillingPlan,
 } from "../lib/billing-plans";
 
@@ -99,7 +99,7 @@ export function BillingPlans({
         <div className="grid gap-6 sm:grid-cols-2">
           <CountStepper
             label="Bookable practitioners"
-            hint={`Admins and receptionists who are not bookable do not count. Extra seats are ${formatUsd(EXTRA_PRACTITIONER_USD)} on Solo and Studio.`}
+            hint={`Admins and receptionists who are not bookable do not count. Extra seats are ${formatUsd(EXTRA_PRACTITIONER_USD)} on Solo and Studio. Studio caps at 10.`}
             value={bookableCount}
             min={1}
             max={40}
@@ -109,7 +109,7 @@ export function BillingPlans({
           />
           <CountStepper
             label="Locations"
-            hint={`Solo is one site. Studio can add a second for ${formatUsd(EXTRA_LOCATION_USD)} and five more seats. Practice adds sites at ${formatUsd(EXTRA_LOCATION_USD)} each.`}
+            hint={`Solo is one site. Studio can add a second for ${formatUsd(EXTRA_LOCATION_USD)} with no extra seats. Practice adds sites at ${formatUsd(EXTRA_LOCATION_USD)} each.`}
             value={locationCount}
             min={1}
             max={12}
@@ -193,9 +193,9 @@ function PlanCard({
   const monthly = monthlyTotalUsd(plan, bookableCount, locationCount);
   const annualTotal = annualTotalUsd(plan, bookableCount, locationCount);
   const available = monthly != null && annualTotal != null;
-  const extras = extraPractitioners(plan, bookableCount, locationCount);
+  const extras = extraPractitioners(plan, bookableCount);
   const extraSites = extraLocations(plan, locationCount);
-  const includedSeats = includedPractitioners(plan, locationCount);
+  const unavailable = planUnavailableReason(plan, bookableCount, locationCount);
 
   const priceBits: string[] = [];
   if (available) {
@@ -213,8 +213,8 @@ function PlanCard({
       priceBits.push(
         `${extras} extra × ${formatUsd(EXTRA_PRACTITIONER_USD)}`,
       );
-    } else if (includedSeats != null) {
-      priceBits.push(`${includedSeats} included`);
+    } else if (plan.includedPractitioners != null) {
+      priceBits.push(`${plan.includedPractitioners} included`);
     } else {
       priceBits.push("unlimited seats");
     }
@@ -248,11 +248,7 @@ function PlanCard({
             : `${formatUsd(monthly)}/mo`}
       </p>
       <p className="mt-1 text-xs text-karsa-faint">
-        {available
-          ? priceBits.join(" · ")
-          : plan.maxLocations === 1
-            ? "One location only"
-            : `Up to ${plan.maxLocations} locations`}
+        {available ? priceBits.join(" · ") : unavailable}
       </p>
       <p className="mt-3 text-xs leading-relaxed text-karsa-muted">{plan.blurb}</p>
       <ul className="mt-4 flex-1 space-y-1.5 text-xs text-karsa-muted">

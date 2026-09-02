@@ -7,8 +7,10 @@ export type BillingPlan = {
   id: BillingPlanId;
   name: string;
   monthlyUsd: number;
-  /** Bookable people included per location. Null = unlimited. */
-  practitionersPerLocation: number | null;
+  /** Included bookable people. Null = unlimited. */
+  includedPractitioners: number | null;
+  /** Null = no seat cap. */
+  maxPractitioners: number | null;
   includedLocations: number;
   /** Null = no cap. */
   maxLocations: number | null;
@@ -24,7 +26,8 @@ export const BILLING_PLANS: BillingPlan[] = [
     id: "solo",
     name: "Solo",
     monthlyUsd: 29,
-    practitionersPerLocation: 1,
+    includedPractitioners: 1,
+    maxPractitioners: null,
     includedLocations: 1,
     maxLocations: 1,
     googleCalendar: true,
@@ -45,17 +48,18 @@ export const BILLING_PLANS: BillingPlan[] = [
     id: "studio",
     name: "Studio",
     monthlyUsd: 69,
-    practitionersPerLocation: 5,
+    includedPractitioners: 5,
+    maxPractitioners: 10,
     includedLocations: 1,
     maxLocations: 2,
     googleCalendar: true,
     googleDrive: false,
     sms: true,
     blurb:
-      "A five-person shop, or two. Each location includes 5 bookable people. SMS and Calendar; Drive is on Practice.",
+      "Five included bookable people, up to 10. A second location is $69 and does not add seats. SMS and Calendar; Drive is on Practice.",
     features: [
-      "5 bookable practitioners per location",
-      "+$12 per extra bookable practitioner",
+      "5 bookable practitioners included",
+      "+$12 per extra bookable practitioner (max 10)",
       "1 location included · second +$69 (max 2)",
       "Everything in Solo",
       "SMS reminders",
@@ -66,7 +70,8 @@ export const BILLING_PLANS: BillingPlan[] = [
     id: "practice",
     name: "Practice",
     monthlyUsd: 99,
-    practitionersPerLocation: null,
+    includedPractitioners: null,
+    maxPractitioners: null,
     includedLocations: 1,
     maxLocations: null,
     googleCalendar: true,
@@ -92,6 +97,13 @@ export function planFitsLocations(
   return plan.maxLocations == null || locationCount <= plan.maxLocations;
 }
 
+export function planFitsPractitioners(
+  plan: BillingPlan,
+  bookableCount: number,
+): boolean {
+  return plan.maxPractitioners == null || bookableCount <= plan.maxPractitioners;
+}
+
 export function extraLocations(
   plan: BillingPlan,
   locationCount: number,
@@ -100,40 +112,45 @@ export function extraLocations(
   return Math.max(0, locationCount - plan.includedLocations);
 }
 
-export function includedPractitioners(
-  plan: BillingPlan,
-  locationCount: number,
-): number | null {
-  if (plan.practitionersPerLocation == null) return null;
-  const sites = Math.min(
-    locationCount,
-    plan.maxLocations ?? locationCount,
-  );
-  return plan.practitionersPerLocation * sites;
-}
-
 export function extraPractitioners(
   plan: BillingPlan,
   bookableCount: number,
-  locationCount: number,
 ): number {
-  const included = includedPractitioners(plan, locationCount);
-  if (included == null) return 0;
-  return Math.max(0, bookableCount - included);
+  if (plan.includedPractitioners == null) return 0;
+  return Math.max(0, bookableCount - plan.includedPractitioners);
 }
 
-/** Null when this plan cannot cover the location count. */
+export function planUnavailableReason(
+  plan: BillingPlan,
+  bookableCount: number,
+  locationCount: number,
+): string | null {
+  const locOk = planFitsLocations(plan, locationCount);
+  const seatOk = planFitsPractitioners(plan, bookableCount);
+  if (locOk && seatOk) return null;
+  if (!locOk && !seatOk) {
+    return `Up to ${plan.maxLocations} locations and ${plan.maxPractitioners} practitioners`;
+  }
+  if (!locOk) {
+    return plan.maxLocations === 1
+      ? "One location only"
+      : `Up to ${plan.maxLocations} locations`;
+  }
+  return `Up to ${plan.maxPractitioners} practitioners`;
+}
+
+/** Null when this plan cannot cover the team or location count. */
 export function monthlyTotalUsd(
   plan: BillingPlan,
   bookableCount: number,
   locationCount: number,
 ): number | null {
   if (!planFitsLocations(plan, locationCount)) return null;
+  if (!planFitsPractitioners(plan, bookableCount)) return null;
   return (
     plan.monthlyUsd +
     extraLocations(plan, locationCount) * EXTRA_LOCATION_USD +
-    extraPractitioners(plan, bookableCount, locationCount) *
-      EXTRA_PRACTITIONER_USD
+    extraPractitioners(plan, bookableCount) * EXTRA_PRACTITIONER_USD
   );
 }
 
