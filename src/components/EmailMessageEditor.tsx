@@ -28,7 +28,16 @@ const WAITLIST_FIELDS: InsertField[] = [
     label: "Service mention",
     token: "[Service mention]",
   },
-  { key: "notes_block", label: "Opening note", token: "[Opening note]" },
+  {
+    key: "preferred_date",
+    label: "Preferred date",
+    token: "[Preferred date]",
+  },
+  {
+    key: "preferred_time",
+    label: "Preferred time",
+    token: "[Preferred time]",
+  },
 ];
 
 const SMS_FIELDS: InsertField[] = [
@@ -81,7 +90,8 @@ function previewSamples(businessName: string): Record<string, string> {
     payment_link_block:
       '<p>Please complete your deposit to hold your appointment.</p><p><a href="#" style="display:inline-block;padding:12px 20px;background:#1c1917;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:500;">Complete payment</a></p>',
     service_name_block: " for Deep Tissue",
-    notes_block: "A cancellation just opened Friday at 2:00 PM.",
+    preferred_date: "Friday, July 25, 2026",
+    preferred_time: "Afternoon preferred",
     book_now_url: "#",
   };
 }

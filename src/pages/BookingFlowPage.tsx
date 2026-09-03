@@ -8,6 +8,7 @@ import {
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { PageLink } from "../components/PageLink";
+import { TemplateFormPreview } from "../components/TemplateFormPreview";
 import {
   bookingConfirmationHtml,
   confirmationPageTitle,
@@ -226,6 +227,9 @@ function BookingFlowTestModal({
   onClose: () => void;
 }) {
   const { services, employees, forms } = useDemoStore();
+  const bookingForm = forms.find(
+    (f) => f.templateKey === "booking" && f.audience === "client" && !f.isDraft,
+  );
   const [sessionKey, setSessionKey] = useState(0);
   const [mounted, setMounted] = useState(false);
   const [i, setI] = useState(0);
@@ -355,117 +359,37 @@ function BookingFlowTestModal({
               <h3 className="mt-1 font-display text-xl">{step.label}</h3>
 
               {step.kind === "booking" ? (
-                <div className="mt-4 space-y-4">
-                  <div>
-                    <p className="text-xs font-medium text-stone-500 uppercase">
-                      Service
-                    </p>
-                    <div className="mt-2 space-y-2">
-                      {services.map((s) => (
-                        <button
-                          key={s.id}
-                          type="button"
-                          onClick={() => setServiceId(s.id)}
-                          className={`block w-full rounded-md border px-3 py-2.5 text-left text-sm ${
-                            serviceId === s.id
-                              ? "border-stone-900 bg-stone-900 text-white"
-                              : "border-stone-300 bg-white"
-                          }`}
-                        >
-                          {s.name} · {s.durationMin}m · ${s.price}
-                        </button>
-                      ))}
-                    </div>
+                bookingForm ? (
+                  <div className="-mx-5 mt-2">
+                    <TemplateFormPreview
+                      form={bookingForm}
+                      formName={bookingForm.name}
+                      services={services}
+                      employees={employees}
+                      mode="sandbox"
+                      className="rounded-none px-5 shadow-none"
+                    />
                   </div>
-                  <div>
-                    <p className="text-xs font-medium text-stone-500 uppercase">
-                      Practitioner
-                    </p>
-                    <div className="mt-2 space-y-2">
-                      {employees.map((e) => (
-                        <button
-                          key={e.id}
-                          type="button"
-                          onClick={() => setEmployeeId(e.id)}
-                          className={`block w-full rounded-md border px-3 py-2.5 text-left text-sm ${
-                            employeeId === e.id
-                              ? "border-stone-900 bg-stone-900 text-white"
-                              : "border-stone-300 bg-white"
-                          }`}
-                        >
-                          {e.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium text-stone-500 uppercase">
-                      Date &amp; time
-                    </p>
-                    <div className="mt-2 grid grid-cols-3 gap-2">
-                      {[
-                        "9:00 AM",
-                        "10:30 AM",
-                        "1:00 PM",
-                        "2:30 PM",
-                        "4:00 PM",
-                      ].map((t) => (
-                        <button
-                          key={t}
-                          type="button"
-                          className="rounded-md border border-stone-300 bg-white px-2 py-2 text-sm hover:border-stone-900"
-                        >
-                          {t}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="block text-sm text-stone-700">
-                      Your name
-                      <input
-                        className="mt-1 w-full rounded-md border border-stone-300 bg-white px-3 py-2"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        placeholder="First and last"
-                      />
-                    </label>
-                    <label className="block text-sm text-stone-700">
-                      Email
-                      <input
-                        className="mt-1 w-full rounded-md border border-stone-300 bg-white px-3 py-2"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="you@example.com"
-                      />
-                    </label>
-                  </div>
-                </div>
-              ) : step.kind === "form" ? (
-                <div className="mt-4 space-y-3">
-                  <p className="text-sm text-stone-600">
-                    Sample Studio · {form?.name ?? step.label}
+                ) : (
+                  <p className="mt-4 text-sm text-stone-600">
+                    Publish a booking form to preview it here.
                   </p>
-                  {(form?.sections.filter((s) => s.enabled) ?? []).map((s) => (
-                    <fieldset
-                      key={s.id}
-                      className="border-t border-stone-200 pt-3"
-                    >
-                      <legend className="text-sm font-semibold text-stone-800">
-                        {s.label}
-                      </legend>
-                      <input
-                        className="mt-2 h-9 w-full rounded border border-stone-300 bg-white px-2 text-sm"
-                        placeholder="Sample answer…"
-                      />
-                    </fieldset>
-                  ))}
-                  {!form ? (
-                    <p className="text-sm text-stone-600">
-                      Form fields would appear here.
-                    </p>
-                  ) : null}
-                </div>
+                )
+              ) : step.kind === "form" ? (
+                form ? (
+                  <div className="-mx-5 mt-2">
+                    <TemplateFormPreview
+                      form={form}
+                      formName={form.name}
+                      mode="sandbox"
+                      className="rounded-none px-5 shadow-none"
+                    />
+                  </div>
+                ) : (
+                  <p className="mt-4 text-sm text-stone-600">
+                    Form fields would appear here.
+                  </p>
+                )
               ) : (
                 <div className="mt-4 space-y-3 text-sm leading-relaxed text-stone-700">
                   <div

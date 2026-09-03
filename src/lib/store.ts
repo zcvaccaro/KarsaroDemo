@@ -348,6 +348,10 @@ export function sectionsForTemplate(templateKey: string): FormSection[] {
             uiOnly: true,
           }),
           mk("treatment_notes", "Reason for visit"),
+          mk("problem_areas", "Problem Areas", {
+            description: "Body chart for marking discomfort areas",
+            uiOnly: true,
+          }),
           mk("custom_fields", "Custom fields"),
         ],
         false,
@@ -769,7 +773,8 @@ function defaultEmailTemplates(businessName = "Sample Studio"): EmailTemplate[] 
       subject: `An opening may be available — ${businessName}`,
       htmlContent: `<p>Hi {{client_name}},</p>
 <p>{{business_name}} wanted you to know a slot may be open{{service_name_block}}.</p>
-<p>{{notes_block}}</p>
+<p>Your preferred date: {{preferred_date}}</p>
+<p>Your preferred time: {{preferred_time}}</p>
 <p><a href="{{book_now_url}}" style="display:inline-block;padding:12px 20px;background:#1c1917;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:500;">Book this appointment</a></p>
 <p>— {{business_name}}</p>`,
       active: true,

@@ -689,11 +689,12 @@ export function ConfirmationsPage() {
       title="Confirmations"
       blurb={
         <>
-          The short “you’re all set” message shown after someone finishes a
-          form. Edit the wording here;{" "}
+          Each client form can have a short confirmation screen after submit.
+          Confirmations are generated automatically when you publish a form.
           <PageLink to="/dashboard/settings/booking-flow">Booking flow</PageLink>{" "}
-          decides which forms (and their confirmations) appear in{" "}
-          <PageLink to="/dashboard/bookings/new">Book Now</PageLink>.
+          decides where those screens appear in{" "}
+          <PageLink to="/dashboard/bookings/new">Book Now</PageLink>; the Close
+          button becomes Continue when another form follows.
         </>
       }
     >
@@ -726,9 +727,6 @@ export function ConfirmationsPage() {
 }
 
 export function BusinessPage() {
-  const [reminders, setReminders] = useState(true);
-  const [waitlist, setWaitlist] = useState(true);
-
   return (
     <PageChrome
       eyebrow="Settings"
@@ -827,22 +825,15 @@ export function BusinessPage() {
         </div>
       </div>
 
-      <div className="space-y-4 border border-karsa-border-subtle p-4">
-        <KarsaToggleField
-          label="Reminder emails enabled"
-          description="Send reminder emails before appointments."
-          checked={reminders}
-          onChange={setReminders}
-        />
-        <KarsaToggleField
-          label="Waitlist enabled"
-          description="Allow clients to join the public waitlist."
-          checked={waitlist}
-          onChange={setWaitlist}
-        />
-      </div>
+      <p className="text-sm leading-relaxed text-karsa-muted">
+        Reminder emails send when the{" "}
+        <PageLink to="/dashboard/settings/email">Email reminder</PageLink>{" "}
+        template is active. The public waitlist is available whenever you have
+        an active waitlist form — no separate toggle here. Returning client
+        lookup on Book Now is always on.
+      </p>
 
-      <FullVersionNote more="Business owners edit timezone, buffers, public booking cutoff, payment link URL, reminder toggles, and the consent / privacy / policy copy that appears on live forms — all persisted per tenant." />
+      <FullVersionNote more="Business owners edit timezone, buffers, public booking cutoff, payment link URL, and the consent / privacy / policy copy that appears on live forms — all persisted per tenant." />
     </PageChrome>
   );
 }

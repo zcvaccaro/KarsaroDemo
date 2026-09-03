@@ -126,7 +126,7 @@ export function EmailPage() {
   ];
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="mx-auto max-w-6xl">
       <p className="text-xs font-medium tracking-[0.16em] text-karsa-faint uppercase">
         Settings · Communications
       </p>
@@ -136,8 +136,8 @@ export function EmailPage() {
       <p className="mt-3 max-w-2xl text-base leading-relaxed text-karsa-muted">
         Write the emails and SMS clients get when a visit is booked, reminded,
         cancelled, or when a <PageLink to="/dashboard/waitlist">waitlist</PageLink>{" "}
-        opening appears. Waitlist emails can include an opening note and a Book
-        now button. In the full product these send automatically; here you can
+        opening appears. Waitlist emails can include preferred date/time tokens
+        and a Book now button. In the full product these send automatically; here you can
         edit the wording and preview how it looks.
       </p>
       <div className="mt-5 max-w-2xl space-y-2 text-sm leading-relaxed text-karsa-muted">
@@ -159,7 +159,7 @@ export function EmailPage() {
         </p>
       </div>
 
-      <div className="mt-8 space-y-6">
+      <div className="mt-8 grid gap-6 sm:grid-cols-2">
         {ordered.map((t) => (
           <TemplateEditor
             key={`${t.templateType}-${t.id}`}
