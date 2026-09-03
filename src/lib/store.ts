@@ -351,6 +351,7 @@ export function sectionsForTemplate(templateKey: string): FormSection[] {
           mk("problem_areas", "Problem Areas", {
             description: "Body chart for marking discomfort areas",
             uiOnly: true,
+            enabled: false,
           }),
           mk("custom_fields", "Custom fields"),
         ],

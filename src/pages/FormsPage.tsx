@@ -470,15 +470,31 @@ export function FormCustomizerPage() {
               <div className="space-y-6">
                 <div>
                   <label className="text-xs text-karsa-faint">Form name</label>
-                  <input
-                    value={formName}
-                    onChange={(e) => setFormName(e.target.value)}
-                    className={inputClass}
-                  />
-                  <p className="mt-1 text-[11px] text-karsa-faint">
-                    Shown in your Forms list, on the form itself, and on
-                    appointments when this form is linked.
-                  </p>
+                  {templateKey === "blank" ? (
+                    <>
+                      <input
+                        value={formName}
+                        onChange={(e) => setFormName(e.target.value)}
+                        className={inputClass}
+                      />
+                      <p className="mt-1 text-[11px] text-karsa-faint">
+                        Shown in your Forms list, on the form itself, and on
+                        appointments when this form is linked.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <input
+                        value={formName}
+                        readOnly
+                        className={`${inputClass} cursor-default opacity-60`}
+                      />
+                      <p className="mt-1 text-[11px] text-karsa-faint">
+                        Template forms have fixed names. Only custom forms can
+                        be renamed.
+                      </p>
+                    </>
+                  )}
                 </div>
 
                 <div className="space-y-3">
