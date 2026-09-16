@@ -7,7 +7,6 @@ import { PageLink } from "../components/PageLink";
 import { DateInput } from "../components/inputs/DateInput";
 import { HmTimeSelect } from "../components/inputs/HmTimeSelect";
 import { KarsaSelect } from "../components/inputs/KarsaSelect";
-import { KarsaToggleField } from "../components/karsa-toggle-switch";
 import { MetricsClient } from "../components/MetricsClient";
 import { rangeBounds } from "../lib/insights-range";
 import { getServiceColor } from "../lib/service-colors";
@@ -359,6 +358,7 @@ export function BookNowPage() {
             variant="dark"
             value={date}
             onChange={setDate}
+            min={todayISO()}
             className="mt-1 w-full rounded-md border border-karsa-border bg-karsa-bg px-3 py-2 text-karsa-text"
           />
         </label>
@@ -551,7 +551,9 @@ export function ClientsPage() {
           Your people list — search, open a profile, or book them again. New
           clients are added when someone books (here or in the full product’s
           public booking page). Open a profile to edit details or use{" "}
-          <PageLink to="/dashboard/bookings/new">Book Now</PageLink>.
+          <PageLink to="/dashboard/bookings/new">Book Now</PageLink>. You can{" "}
+          <PageLink to="/dashboard/clients/import">import client data</PageLink>{" "}
+          from your previous booking software here as well.
         </>
       }
     >
@@ -763,7 +765,6 @@ export function BusinessPage() {
         {[
           ["Business name", "Sample Studio"],
           ["Timezone", "America/New_York"],
-          ["Payment link URL", "https://pay.example.com/sample"],
         ].map(([label, value]) => (
           <label key={label} className="block text-sm text-karsa-muted">
             {label}
@@ -775,6 +776,21 @@ export function BusinessPage() {
           </label>
         ))}
       </div>
+
+      <section className="rounded-md border border-karsa-border-subtle p-4">
+        <h2 className="text-sm font-medium text-karsa-text">Payments</h2>
+        <p className="mt-1 text-xs leading-relaxed text-karsa-faint">
+          Connect Stripe so staff can charge from any appointment — manual card
+          entry, a card on file, or a Stripe Terminal reader. Money goes to the
+          business Stripe account. Square can be added later.
+        </p>
+        <p className="mt-3 text-sm text-karsa-accent-strong">
+          Stripe connected (demo) · charges enabled
+        </p>
+        <p className="mt-1 text-xs text-karsa-faint">
+          Live Karsaro uses Stripe Connect Express onboarding from this page.
+        </p>
+      </section>
 
       <div className="grid gap-6 sm:grid-cols-3">
         <div>
@@ -833,7 +849,7 @@ export function BusinessPage() {
         lookup on Book Now is always on.
       </p>
 
-      <FullVersionNote more="Business owners edit timezone, buffers, public booking cutoff, payment link URL, and the consent / privacy / policy copy that appears on live forms — all persisted per tenant." />
+      <FullVersionNote more="Business owners edit timezone, buffers, public booking cutoff, Stripe Connect, and the consent / privacy / policy copy that appears on live forms — all persisted per tenant." />
     </PageChrome>
   );
 }
@@ -955,6 +971,87 @@ export function SyncSetupPage() {
   );
 }
 
+const GOOGLE_PRIVACY_KEY = "karsaro-google-event-privacy";
+
+function GoogleEventPrivacyRadios() {
+  const [privacy, setPrivacy] = useState<
+    "minimal" | "baa_signed" | "baa_not_required"
+  >("minimal");
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(GOOGLE_PRIVACY_KEY);
+      if (
+        raw === "minimal" ||
+        raw === "baa_signed" ||
+        raw === "baa_not_required"
+      ) {
+        setPrivacy(raw);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  return (
+    <>
+      <fieldset className="mt-4 space-y-3">
+        <legend className="sr-only">Google event details</legend>
+        {(
+          [
+            {
+              value: "minimal" as const,
+              label: "Keep events as a time block (no names)",
+            },
+            {
+              value: "baa_signed" as const,
+              label: "We have signed the Google BAA",
+            },
+            {
+              value: "baa_not_required" as const,
+              label: "We were told we do not have to sign a BAA",
+            },
+          ]
+        ).map((option) => (
+          <label
+            key={option.value}
+            className="flex cursor-pointer items-start gap-2 text-sm text-karsa-muted"
+          >
+            <input
+              type="radio"
+              name="google-event-privacy"
+              value={option.value}
+              className="mt-1 cursor-pointer"
+              checked={privacy === option.value}
+              onChange={() => {
+                setPrivacy(option.value);
+                setSaved(true);
+                try {
+                  localStorage.setItem(GOOGLE_PRIVACY_KEY, option.value);
+                } catch {
+                  /* ignore */
+                }
+              }}
+            />
+            <span>{option.label}</span>
+          </label>
+        ))}
+      </fieldset>
+      <p className="mt-3 text-xs leading-relaxed text-karsa-faint">
+        This is a practice attestation, not legal advice. Existing Google
+        events keep their current titles until the appointment is changed in
+        Karsaro.
+      </p>
+      {saved ? (
+        <p className="mt-2 text-sm text-karsa-accent-strong">
+          Saved. This will apply when you connect Google.
+        </p>
+      ) : null}
+    </>
+  );
+}
+
 export function GooglePage() {
   const { employees } = useDemoStore();
 
@@ -978,6 +1075,22 @@ export function GooglePage() {
           Demo · Not connected (no OAuth in portfolio shell)
         </p>
       </div>
+
+      <section className="border border-karsa-border-subtle p-5">
+        <h2 className="text-sm font-medium text-karsa-text">
+          What goes on Google events
+        </h2>
+        <p className="mt-2 text-sm text-karsa-muted">
+          By default Karsaro only blocks the time. If you have signed Google’s
+          business agreement (BAA), or you were told you do not have to, choose
+          that below. Karsaro then puts client name and service on new and
+          updated Google events automatically.
+        </p>
+        <p className="mt-2 text-sm text-karsa-faint">
+          You can choose now. The setting is remembered in this browser.
+        </p>
+        <GoogleEventPrivacyRadios />
+      </section>
 
       <FullVersionNote more="Connect a Workspace account, pick which Google calendar belongs to each practitioner, and keep bookings two-way synced — including busy times that block public Book Now." />
 
@@ -1135,14 +1248,33 @@ export function MetricsPage() {
 }
 
 export function IncomePage() {
+  const { locations } = useDemoStore();
+  const [locationId, setLocationId] = useState("all");
+
   return (
     <PageChrome
       eyebrow="Insights"
-      title="Estimated income"
-      blurb="A rough money picture: finished visits multiplied by each service’s listed price. Karsaro does not take payments — this is just a planning estimate. Live numbers appear in the full product."
+      title="Income"
+      blurb="A rough money picture: finished visits multiplied by each service’s listed price. Live Karsaro also filters by location (including All) and tracks Stripe paid/unpaid separately."
       maxWidth="max-w-6xl"
     >
-      <FullVersionNote more="Full Karsaro multiplies completed appointments by each service’s list price, with the same timeframe and practitioner filters as Metrics, clearly labeled as estimated revenue." />
+      <FullVersionNote more="Full Karsaro multiplies completed appointments by each service’s list price, with timeframe, location, and practitioner filters, clearly labeled as estimated revenue." />
+      <div className="mb-6 max-w-xs">
+        <label className="block text-xs font-medium tracking-wide text-karsa-faint uppercase">
+          Location
+          <div className="mt-1">
+            <KarsaSelect
+              aria-label="Location"
+              value={locationId}
+              options={[
+                { value: "all", label: "All locations" },
+                ...locations.map((l) => ({ value: l.id, label: l.name })),
+              ]}
+              onChange={setLocationId}
+            />
+          </div>
+        </label>
+      </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="rounded-md border border-karsa-border-subtle px-4 py-3">
           <p className="text-xs tracking-wide text-karsa-faint uppercase">
@@ -1166,7 +1298,7 @@ export function BillingPage() {
     <PageChrome
       eyebrow="Settings"
       title="Billing"
-      blurb="Your Karsaro software plan for this studio (not client payments). Client card charges never go through Karsaro — this page is only the subscription."
+      blurb="Your Karsaro software plan for this studio. Client card charges go to the business Stripe account from appointment Charge Payment — this page is only the subscription."
       maxWidth="max-w-5xl"
     >
       <FullVersionNote more="The live app will run checkout here. This demo uses the same Solo / Studio / Practice prices, extra-seat and extra-location math, and annual first-month-free billing." />

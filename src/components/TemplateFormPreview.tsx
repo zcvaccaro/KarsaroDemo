@@ -371,6 +371,40 @@ export function TemplateFormPreview({
             </fieldset>
           ) : null}
 
+          {isSectionEnabled("insurance", form) ? (
+            <fieldset className="mt-6 rounded-lg border border-stone-200 bg-white/60 p-4">
+              <legend className={legendClass}>Insurance information</legend>
+              <p className="text-sm text-stone-600">
+                If you plan to use insurance for this visit, enter the details
+                from your card. Leave blank if you are paying out of pocket.
+              </p>
+              <div className="mt-4 space-y-4">
+                {fieldsForSection("insurance", form).length > 0 ? (
+                  renderFields("insurance")
+                ) : (
+                  <>
+                    {[
+                      "Insurance company",
+                      "Member ID",
+                      "Group number",
+                      "Policy holder name",
+                      "Relationship to policy holder",
+                    ].map((label) => (
+                      <div className="form-group" key={label}>
+                        <label className={labelClass}>{label}</label>
+                        <input
+                          value={values[label] ?? ""}
+                          onChange={(e) => set(label, e.target.value)}
+                          className={inputClass}
+                        />
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
+            </fieldset>
+          ) : null}
+
           {isSectionEnabled("dob", form) ? (
             <fieldset className="mt-6 rounded-lg border border-stone-200 bg-white/60 p-4">
               <legend className={legendClass}>Date of Birth</legend>
@@ -426,26 +460,6 @@ export function TemplateFormPreview({
             </fieldset>
           ) : null}
 
-          {isSectionEnabled("treatment_notes", form) ? (
-            <fieldset className="mt-6 rounded-lg border border-stone-200 bg-white/60 p-4">
-              <legend className={legendClass}>Reason for Visit</legend>
-              {fieldsForSection("treatment_notes", form).length > 0 ? (
-                renderFields("treatment_notes")
-              ) : (
-                <div className="form-group">
-                  <label className={labelClass}>Reason for Visit</label>
-                  <textarea
-                    rows={4}
-                    value={values.treatmentNotes ?? ""}
-                    onChange={(e) => set("treatmentNotes", e.target.value)}
-                    placeholder="What brings you in today?"
-                    className={inputClass}
-                  />
-                </div>
-              )}
-            </fieldset>
-          ) : null}
-
           {isSectionEnabled("scheduling", form) ? (
             <fieldset className="mt-6 rounded-lg border border-stone-200 bg-white/60 p-4">
               <legend className={legendClass}>Service & appointment time</legend>
@@ -484,6 +498,26 @@ export function TemplateFormPreview({
                 Join the waitlist
               </button>
             </div>
+          ) : null}
+
+          {isSectionEnabled("treatment_notes", form) ? (
+            <fieldset className="mt-6 rounded-lg border border-stone-200 bg-white/60 p-4">
+              <legend className={legendClass}>Reason for Visit</legend>
+              {fieldsForSection("treatment_notes", form).length > 0 ? (
+                renderFields("treatment_notes")
+              ) : (
+                <div className="form-group">
+                  <label className={labelClass}>Reason for Visit</label>
+                  <textarea
+                    rows={4}
+                    value={values.treatmentNotes ?? ""}
+                    onChange={(e) => set("treatmentNotes", e.target.value)}
+                    placeholder="What brings you in today?"
+                    className={inputClass}
+                  />
+                </div>
+              )}
+            </fieldset>
           ) : null}
 
           {isSectionEnabled("health_information", form) &&

@@ -6,6 +6,7 @@ import { formatHm12 } from "../../lib/format-hm";
 import {
   clientDisplayName,
   isBookableEmployee,
+  todayISO,
   upsertClient,
   type Client,
   type Employee,
@@ -282,7 +283,7 @@ export function CalendarBookModal({
           <label className="block text-xs text-karsa-faint">
             Date
             <div className="mt-1">
-              <DateInput value={date} onChange={setDate} />
+              <DateInput value={date} onChange={setDate} min={todayISO()} />
             </div>
           </label>
           <label className="block text-xs text-karsa-faint">

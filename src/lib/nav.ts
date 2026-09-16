@@ -83,8 +83,8 @@ export const demoNav: NavGroup[] = [
       },
       {
         href: "/dashboard/insights/income",
-        label: "Estimated income",
-        description: "List-price value from completed visits",
+        label: "Income",
+        description: "Money collected, Stripe fees, and net",
         mode: "shell",
       },
     ],

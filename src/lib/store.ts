@@ -107,6 +107,7 @@ export type Appointment = {
   startMin: number;
   durationMin: number;
   status?: AppointmentStatus;
+  paymentStatus?: "paid" | "unpaid";
 };
 
 export function appointmentStatus(a: Appointment): AppointmentStatus {
@@ -230,6 +231,7 @@ const BLANK_DEFAULT_OFF = new Set([
   "session",
   "health_information",
   "problem_areas",
+  "insurance",
   "custom_fields",
 ]);
 
@@ -337,6 +339,11 @@ export function sectionsForTemplate(templateKey: string): FormSection[] {
       return withLegal(
         [
           mk("contact", "Personal Information", { locked: true }),
+          mk("insurance", "Insurance information", {
+            description:
+              "Optional — insurance company, member ID, and policy-holder details",
+            enabled: false,
+          }),
           mk("scheduling", "Service & appointment time", {
             locked: true,
             description:
@@ -362,6 +369,11 @@ export function sectionsForTemplate(templateKey: string): FormSection[] {
         [
           mk("personal_information", "Personal Information", {
             locked: true,
+          }),
+          mk("insurance", "Insurance information", {
+            description:
+              "Optional — insurance company, member ID, and policy-holder details",
+            enabled: false,
           }),
           mk("dob", "Date of Birth"),
           mk("address", "Address"),
@@ -401,6 +413,7 @@ export function sectionsForTemplate(templateKey: string): FormSection[] {
         { key: "name", label: "Name" },
         { key: "email", label: "Email" },
         { key: "phone", label: "Phone" },
+        { key: "insurance", label: "Insurance information" },
         { key: "dob", label: "Date of birth" },
         { key: "address", label: "Address" },
         { key: "occupation", label: "Occupation" },
@@ -452,8 +465,31 @@ export function fieldsForTemplate(templateKey: string): FormField[] {
   });
 
   switch (templateKey) {
+    case "booking":
+      return [
+        mk("insurance", "insurance_company", "Insurance company"),
+        mk("insurance", "insurance_member_id", "Member ID"),
+        mk("insurance", "insurance_group_number", "Group number"),
+        mk("insurance", "insurance_policy_holder", "Policy holder name"),
+        mk(
+          "insurance",
+          "insurance_relationship",
+          "Relationship to policy holder",
+        ),
+        mk("treatment_notes", "reason_for_visit", "Reason for Visit"),
+      ];
     case "intake":
       return [
+        mk("insurance", "insurance_company", "Insurance company"),
+        mk("insurance", "insurance_member_id", "Member ID"),
+        mk("insurance", "insurance_group_number", "Group number"),
+        mk("insurance", "insurance_policy_holder", "Policy holder name"),
+        mk(
+          "insurance",
+          "insurance_relationship",
+          "Relationship to policy holder",
+        ),
+        mk("treatment_notes", "reason_for_visit", "Reason for Visit"),
         mk(
           "health_information",
           "conditions",
@@ -488,6 +524,11 @@ export function fieldsForTemplate(templateKey: string): FormField[] {
         mk("name", "last_name", "Last Name"),
         mk("email", "email", "Email Address"),
         mk("phone", "phone", "Phone Number"),
+        mk("insurance", "insurance_company", "Insurance company"),
+        mk("insurance", "insurance_member_id", "Member ID"),
+        mk("insurance", "insurance_group_number", "Group number"),
+        mk("insurance", "insurance_policy_holder", "Policy holder name"),
+        mk("insurance", "insurance_relationship", "Relationship to policy holder"),
         mk("treatment_notes", "reason_for_visit", "Reason for Visit"),
         mk("dob", "dob", "Date of Birth"),
         mk("address", "address", "Address"),
@@ -496,6 +537,128 @@ export function fieldsForTemplate(templateKey: string): FormField[] {
     default:
       return [];
   }
+}
+
+const INSURANCE_DEMO_FIELDS: { key: string; label: string }[] = [
+  { key: "insurance_company", label: "Insurance company" },
+  { key: "insurance_member_id", label: "Member ID" },
+  { key: "insurance_group_number", label: "Group number" },
+  { key: "insurance_policy_holder", label: "Policy holder name" },
+  { key: "insurance_relationship", label: "Relationship to policy holder" },
+];
+
+/** Seed Insurance information (off) below personal info on saved demo forms. */
+export function ensureInsuranceOnDemoForm(form: DemoForm): DemoForm | null {
+  if (
+    form.templateKey !== "booking" &&
+    form.templateKey !== "intake" &&
+    form.templateKey !== "blank"
+  ) {
+    return null;
+  }
+  const afterKeys =
+    form.templateKey === "booking"
+      ? ["contact"]
+      : form.templateKey === "intake"
+        ? ["personal_information"]
+        : ["name", "email", "phone"];
+
+  let section = form.sections.find((s) => s.key === "insurance");
+  if (!section) {
+    section = {
+      id: uid("sec"),
+      key: "insurance",
+      label: "Insurance information",
+      enabled: false,
+      description:
+        "Optional — insurance company, member ID, and policy-holder details",
+    };
+  }
+  const rest = form.sections.filter((s) => s.key !== "insurance");
+  let insertAt = 0;
+  for (const key of afterKeys) {
+    const i = rest.findIndex((s) => s.key === key);
+    if (i >= 0) insertAt = i + 1;
+  }
+  const sections = [
+    ...rest.slice(0, insertAt),
+    section,
+    ...rest.slice(insertAt),
+  ];
+
+  const fields = [...form.fields];
+  for (const def of INSURANCE_DEMO_FIELDS) {
+    const exists = fields.some(
+      (f) =>
+        f.sectionKey === "insurance" &&
+        (f.id.includes(def.key) || f.label === def.label),
+    );
+    if (exists) continue;
+    fields.push({
+      id: uid("fld"),
+      sectionKey: "insurance",
+      label: def.label,
+      enabled: true,
+    });
+  }
+
+  const sameOrder =
+    sections.map((s) => s.key).join("|") ===
+    form.sections.map((s) => s.key).join("|");
+  if (sameOrder && fields.length === form.fields.length) return null;
+  return { ...form, sections, fields };
+}
+
+/** Seed Reason for Visit on booking/intake/custom demo forms. */
+export function ensureReasonForVisitOnDemoForm(form: DemoForm): DemoForm | null {
+  if (
+    form.templateKey !== "booking" &&
+    form.templateKey !== "intake" &&
+    form.templateKey !== "blank"
+  ) {
+    return null;
+  }
+  let changed = false;
+  let sections = form.sections;
+  let notes = sections.find((s) => s.key === "treatment_notes");
+  if (!notes) {
+    notes = {
+      id: uid("sec"),
+      key: "treatment_notes",
+      label: "Reason for Visit",
+      enabled: false,
+    };
+    sections = [...sections, notes];
+    changed = true;
+  }
+  const fields = [...form.fields];
+  const hasReason = fields.some(
+    (f) =>
+      f.sectionKey === "treatment_notes" ||
+      f.label.toLowerCase().includes("reason for visit"),
+  );
+  if (!hasReason) {
+    fields.push({
+      id: uid("fld"),
+      sectionKey: "treatment_notes",
+      label: "Reason for Visit",
+      enabled: true,
+    });
+    changed = true;
+  } else {
+    for (let i = 0; i < fields.length; i += 1) {
+      const f = fields[i];
+      if (
+        f.sectionKey !== "treatment_notes" &&
+        f.label.toLowerCase().includes("reason for visit")
+      ) {
+        fields[i] = { ...f, sectionKey: "treatment_notes" };
+        changed = true;
+      }
+    }
+  }
+  if (!changed) return null;
+  return { ...form, sections, fields };
 }
 
 /** Seed includes Client Intake after booking confirmation so the Appointment created slider is visible. */

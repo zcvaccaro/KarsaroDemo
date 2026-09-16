@@ -382,15 +382,26 @@ export function ClientProfilePage() {
                     <EntityOpenButton
                       kind="appointment"
                       id={a.id}
-                      className="block w-full border border-karsa-border-subtle px-3 py-2 text-left text-sm transition-colors hover:border-karsa-accent"
+                      className="flex w-full items-center gap-2 border border-karsa-border-subtle px-3 py-2 text-left text-sm transition-colors hover:border-karsa-accent"
                     >
-                      <span className="text-karsa-text">
-                        {shortDate(a.date)}
-                        {svc ? ` · ${svc.name}` : ""}
+                      <span
+                        className={
+                          a.paymentStatus === "paid"
+                            ? "text-karsa-accent-strong"
+                            : "text-karsa-warning"
+                        }
+                      >
+                        {a.paymentStatus === "paid" ? "✓" : "○"}
                       </span>
-                      <span className="mt-0.5 block text-xs text-karsa-muted">
-                        {formatClock(a.startMin)}
-                        {a.date >= today ? " · upcoming" : ""}
+                      <span className="min-w-0">
+                        <span className="block text-karsa-text">
+                          {shortDate(a.date)}
+                          {svc ? ` · ${svc.name}` : ""}
+                        </span>
+                        <span className="mt-0.5 block text-xs text-karsa-muted">
+                          {formatClock(a.startMin)}
+                          {a.date >= today ? " · upcoming" : ""}
+                        </span>
                       </span>
                     </EntityOpenButton>
                   </li>
@@ -707,6 +718,31 @@ export function EmployeeProfilePage() {
               {loc.name}
             </li>
           ))}
+        </ul>
+      </section>
+
+      <section className="mt-8 border border-karsa-border-subtle p-4">
+        <h2 className="text-sm font-medium text-karsa-text">Breaks / time off</h2>
+        <p className="mt-1 text-xs leading-relaxed text-karsa-faint">
+          Duplicated copies still appear on the{" "}
+          <PageLink to="/dashboard/calendar">Calendar</PageLink>, where you can
+          edit or delete one at a time.
+        </p>
+        <ul className="mt-3 space-y-2">
+          <li className="flex items-center justify-between gap-3 text-sm text-karsa-muted">
+            <span>
+              <span className="text-karsa-text">Lunch</span>
+              {" — every Tuesday at 12:30 PM for 8 weeks"}
+            </span>
+            <span className="flex h-7 shrink-0 items-center gap-3">
+              <span className="inline-flex h-7 items-center text-xs text-karsa-accent-strong">
+                Duplicate
+              </span>
+              <span className="inline-flex h-7 items-center text-xs text-karsa-danger">
+                Remove
+              </span>
+            </span>
+          </li>
         </ul>
       </section>
 

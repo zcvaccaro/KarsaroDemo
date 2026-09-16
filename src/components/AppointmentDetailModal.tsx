@@ -7,6 +7,7 @@ import { localDateTimeIso } from "../lib/calendar-utils";
 import {
   clientDisplayName,
   deleteAppointment,
+  todayISO,
   upsertAppointment,
 } from "../lib/store";
 import { useDemoStore } from "../lib/use-demo-store";
@@ -31,10 +32,10 @@ export function AppointmentDetailModal({
 }) {
   const store = useDemoStore();
   const [editing, setEditing] = useState(false);
+  const [charging, setCharging] = useState(false);
   const row = store.appointments.find((a) => a.id === appointmentId);
   const client = store.clients.find((c) => c.id === row?.clientId);
   const service = store.services.find((s) => s.id === row?.serviceId);
-  const employee = store.employees.find((e) => e.id === row?.employeeId);
 
   const [date, setDate] = useState(row?.date ?? "");
   const [time, setTime] = useState(minToHm(row?.startMin ?? 0));
@@ -133,7 +134,7 @@ export function AppointmentDetailModal({
             <label className="block text-xs text-karsa-faint">
               Date
               <div className="mt-1">
-                <DateInput value={date} onChange={setDate} />
+                <DateInput value={date} onChange={setDate} min={todayISO()} />
               </div>
             </label>
             <label className="block text-xs text-karsa-faint">
@@ -238,9 +239,13 @@ export function AppointmentDetailModal({
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-karsa-faint uppercase">Employee</dt>
-              <dd className="mt-1 text-karsa-text">
-                {employee?.name ?? "Staff"}
+              <dt className="text-xs text-karsa-faint uppercase">Payment</dt>
+              <dd className="mt-1">
+                {row.paymentStatus === "paid" ? (
+                  <span className="text-karsa-accent-strong">Paid</span>
+                ) : (
+                  <span className="text-karsa-warning">Unpaid</span>
+                )}
               </dd>
             </div>
           </dl>
@@ -283,6 +288,19 @@ export function AppointmentDetailModal({
               Edit
             </button>
           ) : null}
+          {row.paymentStatus !== "paid" ? (
+            <button
+              type="button"
+              onClick={() => setCharging(true)}
+              className="rounded-md bg-karsa-accent px-4 py-2 text-sm font-medium text-karsa-bg"
+            >
+              Charge Payment
+            </button>
+          ) : (
+            <span className="self-center text-sm text-karsa-accent-strong">
+              Paid
+            </span>
+          )}
           <button
             type="button"
             onClick={onClose}
@@ -302,6 +320,55 @@ export function AppointmentDetailModal({
           </button>
         </div>
       </div>
+      {charging ? (
+        <div className="fixed inset-0 z-[90] flex items-start justify-center overflow-y-auto bg-black/55 p-4 py-10">
+          <div
+            className="absolute inset-0"
+            onClick={() => setCharging(false)}
+            role="presentation"
+          />
+          <div className="relative z-10 w-full max-w-md rounded-lg border border-karsa-border bg-karsa-bg p-6">
+            <h3 className="font-display text-xl text-karsa-text">
+              Charge Payment
+            </h3>
+            <p className="mt-2 text-sm text-karsa-muted">
+              Demo only — live Karsaro sends this amount to Stripe (manual card,
+              card on file, or your Terminal reader).
+            </p>
+            <p className="mt-3 text-sm text-karsa-text">
+              Amount: ${service?.price ?? 0}
+            </p>
+            <div className="mt-4 flex flex-col gap-2">
+              {(
+                [
+                  "Manual card entry",
+                  "Charge card on file",
+                  "Use reader",
+                ] as const
+              ).map((label) => (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => {
+                    upsertAppointment({ ...row, paymentStatus: "paid" });
+                    setCharging(false);
+                  }}
+                  className="rounded-md border border-karsa-border px-3 py-2 text-left text-sm text-karsa-text hover:border-karsa-accent"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => setCharging(false)}
+              className="mt-4 rounded-md border border-karsa-border px-3 py-1.5 text-sm text-karsa-muted"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -26,8 +26,6 @@ const CARD_W = 176;
 const GAP_W = 24;
 const TRACK_PAD_X = 120;
 
-type AddSelection = { formId: string } | null;
-
 function stepTitle(step: FlowStep, previous?: FlowStep | null): string {
   if (step.stepType === "schedule" || step.stepType === "contact") {
     return "Booking form";
@@ -233,10 +231,9 @@ function BookingFlowTestModal({
   const [sessionKey, setSessionKey] = useState(0);
   const [mounted, setMounted] = useState(false);
   const [i, setI] = useState(0);
-  const [serviceId, setServiceId] = useState(services[0]?.id ?? "");
-  const [employeeId, setEmployeeId] = useState(employees[0]?.id ?? "");
+  const [serviceId] = useState(services[0]?.id ?? "");
+  const [employeeId] = useState(employees[0]?.id ?? "");
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
 
   const walkSteps = useMemo(() => {
     // Collapse schedule+contact into one "booking form" walk page
@@ -288,7 +285,6 @@ function BookingFlowTestModal({
   useEffect(() => {
     setI(0);
     setName("");
-    setEmail("");
   }, [sessionKey]);
 
   if (!mounted) return null;
@@ -452,7 +448,6 @@ export function BookingFlowPage() {
     appointmentCreatedAfterStepOrder,
   );
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [addSelection, setAddSelection] = useState<AddSelection>(null);
   const [resetMessage, setResetMessage] = useState("");
   const [testOpen, setTestOpen] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
@@ -635,14 +630,6 @@ export function BookingFlowPage() {
     });
   }
 
-  function addFromSelector() {
-    if (!addSelection) return;
-    const form = clientForms.find((f) => f.id === addSelection.formId);
-    if (!form) return;
-    appendFormWithConfirmation(form);
-    setAddSelection(null);
-  }
-
   function removeVisualAt(visualIdx: number) {
     if (isLockedVisualStep(steps, visualIdx, bookingSpan)) return;
     const stepOrder = visualIndexToStepOrder(visualIdx, bookingSpan);
@@ -674,7 +661,6 @@ export function BookingFlowPage() {
     setSteps(defaultFlowSteps());
     setAppointmentAfter(1);
     setSelectedId(null);
-    setAddSelection(null);
     setResetMessage("Booking flow reset to default.");
     window.setTimeout(() => setResetMessage(""), 3500);
   }
@@ -728,11 +714,10 @@ export function BookingFlowPage() {
             </div>
             <button
               type="button"
-              disabled={!addSelection}
-              onClick={addFromSelector}
-              className="rounded-md bg-karsa-accent px-4 py-2 text-sm font-medium text-karsa-bg disabled:opacity-50"
+              onClick={onSave}
+              className="rounded-md bg-karsa-accent px-4 py-2 text-sm font-medium text-karsa-bg"
             >
-              Add to flow
+              Save booking flow
             </button>
             <button
               type="button"
@@ -759,20 +744,20 @@ export function BookingFlowPage() {
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {clientForms.map((form) => {
                 const inFlow = formsAlreadyInFlow.has(form.id);
-                const selected = addSelection?.formId === form.id;
                 return (
                   <button
                     key={form.id}
                     type="button"
                     disabled={inFlow}
-                    onClick={() => setAddSelection({ formId: form.id })}
+                    onClick={() => {
+                      if (inFlow) return;
+                      appendFormWithConfirmation(form);
+                    }}
                     className={[
                       "rounded-md border px-3 py-2.5 text-left text-sm transition-colors",
                       inFlow
                         ? "cursor-not-allowed border-karsa-border-subtle text-karsa-faint opacity-60"
-                        : selected
-                          ? "border-karsa-accent bg-karsa-accent-soft text-karsa-text"
-                          : "border-karsa-border bg-karsa-bg text-karsa-text hover:border-karsa-accent hover:bg-karsa-accent-soft",
+                        : "border-karsa-border bg-karsa-bg text-karsa-text hover:border-karsa-accent hover:bg-karsa-accent-soft",
                     ].join(" ")}
                     title={
                       inFlow

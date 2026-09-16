@@ -168,3 +168,69 @@ input[type="button"]:not(:disabled):hover {
   background: var(--karsa-accent);
   border-radius: 999px;
 }
+
+.karsaro-help-button .karsaro-help-orbits {
+  position: relative;
+  display: inline-block;
+  width: 28px;
+  height: 28px;
+}
+
+.karsaro-help-orbit {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: rotate(var(--karsaro-help-from, 0deg));
+  transform-origin: 50% 50%;
+  animation-play-state: paused;
+  animation-fill-mode: both;
+}
+
+.karsaro-help-orbit-outer {
+  animation: karsaro-help-spin-cw 2.8s linear infinite;
+  animation-play-state: paused;
+}
+
+.karsaro-help-orbit-mid {
+  animation: karsaro-help-spin-ccw 2.4s linear infinite;
+  animation-play-state: paused;
+}
+
+.karsaro-help-orbit-inner {
+  animation: karsaro-help-spin-cw 1.8s linear infinite;
+  animation-play-state: paused;
+}
+
+.karsaro-help-button:hover .karsaro-help-orbit-outer,
+.karsaro-help-button:hover .karsaro-help-orbit-mid,
+.karsaro-help-button:hover .karsaro-help-orbit-inner {
+  animation-play-state: running;
+}
+
+@keyframes karsaro-help-spin-cw {
+  from {
+    transform: rotate(var(--karsaro-help-from, 0deg));
+  }
+  to {
+    transform: rotate(calc(var(--karsaro-help-from, 0deg) + 360deg));
+  }
+}
+
+@keyframes karsaro-help-spin-ccw {
+  from {
+    transform: rotate(var(--karsaro-help-from, 0deg));
+  }
+  to {
+    transform: rotate(calc(var(--karsaro-help-from, 0deg) - 360deg));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .karsaro-help-orbit-outer,
+  .karsaro-help-orbit-mid,
+  .karsaro-help-orbit-inner {
+    animation: none;
+  }
+}

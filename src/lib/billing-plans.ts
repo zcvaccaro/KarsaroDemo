@@ -25,7 +25,7 @@ export const BILLING_PLANS: BillingPlan[] = [
   {
     id: "solo",
     name: "Solo",
-    monthlyUsd: 29,
+    monthlyUsd: 34,
     includedPractitioners: 1,
     maxPractitioners: 5,
     includedLocations: 1,
@@ -40,6 +40,7 @@ export const BILLING_PLANS: BillingPlan[] = [
       "+$12 per extra bookable practitioner (max 5)",
       "1 location (cannot add more)",
       "Unlimited appointments",
+      "In-person Stripe payments (card, card on file, reader)",
       "Forms, waitlist, and email reminders",
       "Google Calendar sync",
     ],
@@ -47,7 +48,7 @@ export const BILLING_PLANS: BillingPlan[] = [
   {
     id: "studio",
     name: "Studio",
-    monthlyUsd: 69,
+    monthlyUsd: 74,
     includedPractitioners: 5,
     maxPractitioners: 10,
     includedLocations: 1,
@@ -69,7 +70,7 @@ export const BILLING_PLANS: BillingPlan[] = [
   {
     id: "practice",
     name: "Practice",
-    monthlyUsd: 99,
+    monthlyUsd: 104,
     includedPractitioners: null,
     maxPractitioners: null,
     includedLocations: 1,

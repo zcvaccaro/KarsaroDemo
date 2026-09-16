@@ -7,6 +7,7 @@ import { orderQuickActions } from "../lib/quick-actions";
 import { resetDemoState } from "../lib/store";
 import { useDemoStore } from "../lib/use-demo-store";
 import { EntityModalsProvider } from "./EntityModals";
+import { HelpChatWidget } from "./HelpChatWidget";
 
 const CHIP_LABEL: Record<string, string> = {
   "/dashboard/calendar": "Calendar",
@@ -208,6 +209,7 @@ export function ShellLayout() {
             <Outlet />
           </EntityModalsProvider>
         </main>
+        <HelpChatWidget />
       </div>
     </div>
   );

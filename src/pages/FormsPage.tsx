@@ -6,6 +6,8 @@ import { TemplateFormPreview } from "../components/TemplateFormPreview";
 import {
   createFormFromTemplate,
   deleteForm,
+  ensureInsuranceOnDemoForm,
+  ensureReasonForVisitOnDemoForm,
   FORM_TEMPLATE_STARTERS,
   setFormFields,
   setFormSections,
@@ -295,6 +297,15 @@ export function FormCustomizerPage() {
     setShowInCalendarDescription(form.showInCalendarDescription);
   }, [form?.id]); // eslint-disable-line react-hooks/exhaustive-deps -- sync when navigating forms
 
+  useEffect(() => {
+    if (!form) return;
+    const withInsurance = ensureInsuranceOnDemoForm(form) ?? form;
+    const next = ensureReasonForVisitOnDemoForm(withInsurance) ?? withInsurance;
+    if (next === form) return;
+    setFormSections(form.id, next.sections);
+    setFormFields(form.id, next.fields);
+  }, [form?.id]); // eslint-disable-line react-hooks/exhaustive-deps -- seed insurance once per form
+
   const templateKey = form?.templateKey ?? "blank";
   const lockedAudience =
     templateKey === "booking" || templateKey === "waitlist";
@@ -339,12 +350,41 @@ export function FormCustomizerPage() {
   }
 
   function toggleSection(sectionId: string, next: boolean) {
-    setFormSections(
-      currentForm.id,
-      currentForm.sections.map((s) =>
-        s.id === sectionId ? { ...s, enabled: next } : s,
-      ),
+    const target = currentForm.sections.find((s) => s.id === sectionId);
+    const sections = currentForm.sections.map((s) =>
+      s.id === sectionId ? { ...s, enabled: next } : s,
     );
+    let fields = currentForm.fields;
+    if (next && target?.key === "insurance") {
+      const ensured = ensureInsuranceOnDemoForm({
+        ...currentForm,
+        sections,
+        fields,
+      });
+      if (ensured) {
+        setFormSections(currentForm.id, ensured.sections);
+        setFormFields(currentForm.id, ensured.fields);
+        return;
+      }
+    }
+    if (next && target?.key === "treatment_notes") {
+      const ensured = ensureReasonForVisitOnDemoForm({
+        ...currentForm,
+        sections,
+        fields,
+      });
+      if (ensured) {
+        setFormSections(
+          currentForm.id,
+          ensured.sections.map((s) =>
+            s.key === "treatment_notes" ? { ...s, enabled: true } : s,
+          ),
+        );
+        setFormFields(currentForm.id, ensured.fields);
+        return;
+      }
+    }
+    setFormSections(currentForm.id, sections);
   }
 
   function setDateOptionCount(sectionId: string, next: number) {
@@ -753,6 +793,12 @@ export function FormCustomizerPage() {
                             <p className="mt-0.5 text-xs text-karsa-faint">
                               {section.description ??
                                 "Location appears here only when you have more than one saved location — clients pick from those locations only."}
+                            </p>
+                          ) : null}
+                          {section.key === "treatment_notes" ? (
+                            <p className="mt-0.5 text-xs text-karsa-faint">
+                              If this field is enabled on a previous form in the
+                              booking flow, it will autofill.
                             </p>
                           ) : null}
                           {section.uiOnly &&

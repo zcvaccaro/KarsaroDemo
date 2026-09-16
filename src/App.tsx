@@ -18,6 +18,7 @@ import {
 } from "./pages/ProfilePages";
 import { ServicesPage } from "./pages/ServicesPage";
 import { PublicBookOfferPage } from "./pages/PublicBookOfferPage";
+import { ImportClientsPage } from "./pages/ImportClientsPage";
 import {
   BillingPage,
   BookNowPage,
@@ -46,6 +47,10 @@ export default function App() {
           <Route path="/dashboard/waitlist" element={<WaitlistPage />} />
           <Route path="/dashboard/waitlist/:id" element={<WaitlistDetailPage />} />
           <Route path="/dashboard/clients" element={<ClientsPage />} />
+          <Route
+            path="/dashboard/clients/import"
+            element={<ImportClientsPage />}
+          />
           <Route
             path="/dashboard/clients/:clientId"
             element={<ClientProfilePage />}
