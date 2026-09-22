@@ -14,6 +14,7 @@ import {
   appointmentStatus,
   clientDisplayName,
   confirmationPageTitle,
+  importDemoAttachment,
   isBookableEmployee,
   todayISO,
   upsertAppointment,
@@ -694,16 +695,7 @@ export function ConfirmationsPage() {
     <PageChrome
       eyebrow="Forms · Confirmations"
       title="Confirmations"
-      blurb={
-        <>
-          Each client form can have a short confirmation screen after submit.
-          Confirmations are generated automatically when you publish a form.
-          <PageLink to="/dashboard/settings/booking-flow">Booking flow</PageLink>{" "}
-          decides where those screens appear in{" "}
-          <PageLink to="/dashboard/bookings/new">Book Now</PageLink>; the Close
-          button becomes Continue when another form follows.
-        </>
-      }
+      blurb="Each client-side appointment form gets its own confirmation message automatically upon creation. These confirmations will be seen by clients when they book online. Here is where you can edit those confirmation messages."
     >
       <p className="text-xs font-medium tracking-[0.12em] text-karsa-faint uppercase">
         Paired with your client forms
@@ -887,6 +879,124 @@ export function BusinessPage() {
   );
 }
 
+function DemoImportForms() {
+  const { clients, employees, forms } = useDemoStore();
+  const [subjectType, setSubjectType] = useState<"client" | "employee">("client");
+  const savedForms = forms.filter((f) => !f.isDraft && f.active && f.templateKey !== "booking");
+  const [formId, setFormId] = useState(savedForms[0]?.id ?? "");
+  const [message, setMessage] = useState<string | null>(null);
+  const selected = savedForms.find((f) => f.id === formId);
+  const needsDate = subjectType === "client" && Boolean(selected?.showInCalendarDescription);
+  const people = subjectType === "client" ? clients : employees;
+  const fieldClass =
+    "mt-1 w-full rounded-md border border-karsa-border bg-karsa-bg px-3 py-2 text-sm text-karsa-text outline-none ring-karsa-accent/40 focus:ring-2";
+
+  return (
+    <form
+      className="mt-4 space-y-4"
+      onSubmit={(event) => {
+        event.preventDefault();
+        const data = new FormData(event.currentTarget);
+        const subjectId = String(data.get("subjectId") ?? "");
+        const visitDate = String(data.get("visitDate") ?? "");
+        const file = data.get("file");
+        const filename =
+          file instanceof File && file.name ? file.name : "Imported scan.pdf";
+        if (!subjectId || !formId) return;
+        const result = importDemoAttachment({
+          formId,
+          filename,
+          subjectType,
+          subjectId,
+          visitDate: needsDate ? visitDate : undefined,
+        });
+        if (result.createdPlaceholder) {
+          setMessage(
+            `Saved as ${selected?.name ?? "form"}. A filler visit card was added so it lines up on the client profile.`,
+          );
+        } else if (result.matchedVisit) {
+          setMessage(`Saved as ${selected?.name ?? "form"} on the matching visit.`);
+        } else {
+          setMessage(`Saved as ${selected?.name ?? "form"} on that profile.`);
+        }
+      }}
+    >
+      <div className="grid items-end gap-3 sm:grid-cols-2">
+        <label className="text-xs text-karsa-faint">
+          Save to
+          <select
+            name="subjectType"
+            value={subjectType}
+            onChange={(event) =>
+              setSubjectType(event.target.value === "employee" ? "employee" : "client")
+            }
+            className={fieldClass}
+          >
+            <option value="client">Client profile</option>
+            <option value="employee">Employee profile</option>
+          </select>
+        </label>
+        <label className="text-xs text-karsa-faint">
+          {subjectType === "client" ? "Client" : "Employee"}
+          <select name="subjectId" required className={fieldClass}>
+            {people.map((person) => (
+              <option key={person.id} value={person.id}>
+                {"firstName" in person
+                  ? clientDisplayName(person)
+                  : person.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="text-xs text-karsa-faint">
+          Saved form name
+          <select
+            name="formId"
+            required
+            value={formId}
+            onChange={(event) => setFormId(event.target.value)}
+            className={fieldClass}
+          >
+            {savedForms.map((form) => (
+              <option key={form.id} value={form.id}>
+                {form.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        {needsDate ? (
+          <label className="text-xs text-karsa-faint">
+            Visit date
+            <input type="date" name="visitDate" required className={fieldClass} />
+          </label>
+        ) : null}
+        <label className="text-xs text-karsa-faint sm:col-span-2">
+          Scan or file
+          <input
+            type="file"
+            name="file"
+            accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,.heic,.doc,.docx,application/pdf,image/*"
+            className={`${fieldClass} file:mr-3 file:rounded-md file:border-0 file:bg-karsa-accent-soft file:px-3 file:py-1 file:text-xs file:text-karsa-text`}
+          />
+        </label>
+      </div>
+      <p className="text-xs leading-relaxed text-karsa-faint">
+        Demo stores the filename only. Appointment-linked forms sit next to that
+        visit; if none exists, a filler card is added.
+      </p>
+      {message ? (
+        <p className="text-sm text-karsa-accent-strong">{message}</p>
+      ) : null}
+      <button
+        type="submit"
+        className="rounded-md bg-karsa-accent px-4 py-2.5 text-sm font-medium text-karsa-bg"
+      >
+        Save file
+      </button>
+    </form>
+  );
+}
+
 export function SyncSetupPage() {
   return (
     <PageChrome
@@ -973,6 +1083,42 @@ export function SyncSetupPage() {
           >
             Configure Google Drive
           </Link>
+        </li>
+
+        <li className="border border-karsa-border-subtle p-5">
+          <p className="text-xs font-medium tracking-[0.12em] text-karsa-faint uppercase">
+            Import
+          </p>
+          <h2 className="mt-2 text-lg font-medium text-karsa-text">
+            Bring clients, forms, and notes in
+          </h2>
+          <div className="mt-5 space-y-6">
+            <div>
+              <h3 className="text-sm font-medium text-karsa-text">
+                Client import
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-karsa-muted">
+                Export a client CSV from the product you are leaving, then map
+                names, emails, phones, and notes.
+              </p>
+              <Link
+                to="/dashboard/clients/import"
+                className="mt-4 inline-flex cursor-pointer rounded-md bg-karsa-accent px-4 py-2.5 text-sm font-medium text-karsa-bg transition-colors hover:bg-karsa-accent-strong"
+              >
+                Import clients
+              </Link>
+            </div>
+            <div className="border-t border-karsa-border-subtle pt-5">
+              <h3 className="text-sm font-medium text-karsa-text">
+                Forms and notes
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-karsa-muted">
+                Upload a scan or file, pick a client or employee, and pick one
+                of your saved forms as the name.
+              </p>
+              <DemoImportForms />
+            </div>
+          </div>
         </li>
       </ol>
 

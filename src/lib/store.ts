@@ -107,7 +107,19 @@ export type Appointment = {
   startMin: number;
   durationMin: number;
   status?: AppointmentStatus;
-  paymentStatus?: "paid" | "unpaid";
+  paymentStatus?: "paid" | "unpaid" | "partial";
+  source?: "karsaro" | "import_placeholder";
+};
+
+export type ImportedFile = {
+  id: string;
+  formId: string;
+  formName: string;
+  filename: string;
+  clientId?: string;
+  employeeId?: string;
+  appointmentId?: string;
+  date?: string;
 };
 
 export function appointmentStatus(a: Appointment): AppointmentStatus {
@@ -116,6 +128,7 @@ export function appointmentStatus(a: Appointment): AppointmentStatus {
 }
 
 export function showsOnCalendar(a: Appointment): boolean {
+  if (a.source === "import_placeholder") return false;
   const status = appointmentStatus(a);
   return status === "scheduled" || status === "completed";
 }
@@ -198,14 +211,16 @@ export type DemoState = {
   /** Ordered quick-action hrefs; null = default product order */
   quickActionsOrder: string[] | null;
   forms: DemoForm[];
+  importedFiles: ImportedFile[];
   flowSteps: FlowStep[];
   appointmentCreatedAfterStepOrder: number;
   /** YYYY-MM — sample calendar is rebuilt when the visitor’s month changes */
   seedCalendarMonth: string;
 };
 
-const STORAGE_KEY = "karsaro-demo-shell-v6";
+const STORAGE_KEY = "karsaro-demo-shell-v7";
 const PREV_STORAGE_KEYS = [
+  "karsaro-demo-shell-v6",
   "karsaro-demo-shell-v5",
   "karsaro-demo-shell-v4",
   "karsaro-demo-shell-v3",
@@ -1040,8 +1055,7 @@ export function createSeedState(): DemoState {
     withDerivedService({
       id: "s1",
       name: "Service 1",
-      description:
-        "A standard wellness session — length and price are editable.",
+      description: "A service we offer.",
       bufferMinutes: 15,
       colorId: "2",
       active: true,
@@ -1054,7 +1068,7 @@ export function createSeedState(): DemoState {
     withDerivedService({
       id: "s2",
       name: "Service 2",
-      description: "A longer session option for deeper work.",
+      description: "A longer session I like.",
       bufferMinutes: 15,
       colorId: "7",
       active: true,
@@ -1064,7 +1078,7 @@ export function createSeedState(): DemoState {
     withDerivedService({
       id: "s3",
       name: "Service 3",
-      description: "A shorter focused visit.",
+      description: "Another service.",
       bufferMinutes: 10,
       colorId: "5",
       active: true,
@@ -1074,7 +1088,7 @@ export function createSeedState(): DemoState {
     withDerivedService({
       id: "s4",
       name: "Service 4",
-      description: "A premium or specialty offering.",
+      description: "A different session.",
       bufferMinutes: 20,
       colorId: "9",
       active: true,
@@ -1198,6 +1212,7 @@ export function createSeedState(): DemoState {
     appointments: buildCurrentMonthAppointments(employees, clients, services),
     waitlistEntries: buildCurrentMonthWaitlist(clients, services),
     quickActionsOrder: null,
+    importedFiles: [],
     seedCalendarMonth,
     forms: [
       {
@@ -1645,6 +1660,9 @@ function normalizeState(raw: Partial<DemoState> | null | undefined): DemoState {
       ? raw.quickActionsOrder
       : null,
     forms,
+    importedFiles: Array.isArray(raw.importedFiles)
+      ? (raw.importedFiles as ImportedFile[])
+      : [],
     flowSteps,
     appointmentCreatedAfterStepOrder,
     seedCalendarMonth:
@@ -1694,6 +1712,73 @@ export function subscribeDemo(listener: Listener) {
 export function resetDemoState() {
   state = createSeedState();
   persist();
+}
+
+export function importDemoAttachment(input: {
+  formId: string;
+  filename: string;
+  subjectType: "client" | "employee";
+  subjectId: string;
+  visitDate?: string;
+}): { createdPlaceholder: boolean; matchedVisit: boolean } {
+  const form = state.forms.find((f) => f.id === input.formId);
+  const formName = form?.name ?? "Form";
+  const appointmentLinked = Boolean(form?.showInCalendarDescription);
+  let appointmentId: string | undefined;
+  let createdPlaceholder = false;
+  let matchedVisit = false;
+
+  if (appointmentLinked && input.subjectType === "client" && input.visitDate) {
+    const existing = state.appointments.filter(
+      (a) =>
+        a.clientId === input.subjectId &&
+        a.date === input.visitDate &&
+        appointmentStatus(a) !== "cancelled",
+    );
+    const real = existing.find((a) => a.source !== "import_placeholder");
+    const placeholder = existing.find((a) => a.source === "import_placeholder");
+    if (real) {
+      appointmentId = real.id;
+      matchedVisit = true;
+    } else if (placeholder) {
+      appointmentId = placeholder.id;
+    } else {
+      appointmentId = uid("appt");
+      createdPlaceholder = true;
+      state = {
+        ...state,
+        appointments: [
+          ...state.appointments,
+          {
+            id: appointmentId,
+            employeeId: "",
+            clientId: input.subjectId,
+            serviceId: "",
+            date: input.visitDate,
+            startMin: 12 * 60,
+            durationMin: 1,
+            status: "completed",
+            paymentStatus: "unpaid",
+            source: "import_placeholder",
+          },
+        ],
+      };
+    }
+  }
+
+  const file: ImportedFile = {
+    id: uid("imp"),
+    formId: input.formId,
+    formName,
+    filename: input.filename,
+    clientId: input.subjectType === "client" ? input.subjectId : undefined,
+    employeeId: input.subjectType === "employee" ? input.subjectId : undefined,
+    appointmentId,
+    date: input.visitDate,
+  };
+  state = { ...state, importedFiles: [...state.importedFiles, file] };
+  persist();
+  return { createdPlaceholder, matchedVisit };
 }
 
 export function upsertAppointment(appt: Appointment) {

@@ -153,6 +153,12 @@ input[type="time"] {
   cursor: pointer;
 }
 
+/* Native checkboxes / radios — match Karsaro accent (not browser blue) */
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--karsa-accent);
+}
+
 button:disabled,
 input:disabled,
 select:disabled,

@@ -9,16 +9,16 @@ const labelClass = "block text-sm font-medium text-stone-700";
 const legendClass = "px-1 text-base font-semibold text-stone-800";
 
 const DEFAULT_CONSENT =
-  "By checking this box, I consent to receiving services from this business and confirm that the information I provide is accurate to the best of my knowledge. I understand that the business’s appointment policies (including cancellation or no-show fees, if applicable) may apply.\n\nThis is a general template provided by Karsaro. Customize it for your practice and local requirements.";
+  "By checking this box, I consent to receiving services from this business and confirm that the information I provide is accurate to the best of my knowledge. I understand that the business’s appointment policies (including cancellation or no-show fees, if applicable) may apply.\n\nThis is a general template provided by Karsaro. Customize it for your business and local requirements.";
 
 const DEFAULT_PRIVACY =
   "Privacy Policy (template)\n\nThis business collects personal information you provide—such as your name, contact details, and any health-related information needed to deliver services—to schedule appointments, provide care, and communicate with you about your visits.\n\nYour information is used for business operations related to your services. It is not sold to third parties. Access is limited to authorized staff who need it to do their jobs.\n\nYou may request access to or correction of your personal information by contacting the business directly.\n\nThis is a general, non-specific template provided by Karsaro. Please customize or replace it to match your legal and professional requirements.";
 
 const DEFAULT_CANCELLATION =
-  "Cancellation policy (template)\n\nPlease cancel or reschedule at least 24 hours before your appointment. Late cancellations or missed appointments may be subject to a fee at the business’s discretion.\n\nContact the business as soon as possible if you need to change your appointment.\n\nThis is a general template provided by Karsaro. Customize it for your practice.";
+  "Cancellation policy (template)\n\nPlease cancel or reschedule at least 24 hours before your appointment. Late cancellations or missed appointments may be subject to a fee at the business’s discretion.\n\nContact the business as soon as possible if you need to change your appointment.\n\nThis is a general template provided by Karsaro. Customize it for your business.";
 
 const DEFAULT_EMPLOYEE_AGREEMENT =
-  "Employee agreement (template)\n\nBy signing below, I acknowledge that I am joining this business as an employee or contractor and agree to follow its workplace policies, professional standards, and confidentiality requirements.\n\nI confirm that the personal information I provide on this form is accurate. I understand that this agreement may be updated by the business and that I should ask an administrator if I have questions before signing.\n\nThis is a general template provided by Karsaro. Customize it for your practice and local employment requirements.";
+  "Employee agreement (template)\n\nBy signing below, I acknowledge that I am joining this business as an employee or contractor and agree to follow its workplace policies, professional standards, and confidentiality requirements.\n\nI confirm that the personal information I provide on this form is accurate. I understand that this agreement may be updated by the business and that I should ask an administrator if I have questions before signing.\n\nThis is a general template provided by Karsaro. Customize it for your business and local employment requirements.";
 
 function formatSsnInput(value: string): string {
   const d = value.replace(/\D/g, "").slice(0, 9);

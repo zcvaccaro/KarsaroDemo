@@ -108,7 +108,7 @@ function ClientBookButton({ clientId }: { clientId: string }) {
 
 export function ClientProfilePage() {
   const { clientId } = useParams();
-  const { clients, appointments, services, forms } = useDemoStore();
+  const { clients, appointments, services, forms, importedFiles } = useDemoStore();
   const client = clients.find((c) => c.id === clientId);
   const today = todayISO();
 
@@ -327,130 +327,167 @@ export function ClientProfilePage() {
         </form>
       </section>
 
-      {appts.length === 0 ? (
-        <section className="mt-8 mb-12 border border-dashed border-karsa-border-subtle p-6">
-          <h2 className="text-sm font-medium text-karsa-text">
-            Appointments × linked forms
-          </h2>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-karsa-muted">
-            In the live app this profile becomes a grid: one Appointments column
-            (details pulled from the booking form) plus a column for each
-            appointment-linked form. Staff see Submitted / Not started per visit
-            and can open Client Intake, Session Notes, and other linked forms
-            without leaving the profile.
-          </p>
-          <p className="mt-3 text-sm text-karsa-faint">
-            None yet — book this client to populate the matrix.
-          </p>
-          {linkedForms.length > 0 ? (
-            <ul className="mt-4 flex flex-wrap gap-2">
-              {linkedForms.map((f) => (
-                <li
-                  key={f.id}
-                  className="rounded-md border border-karsa-border-subtle px-3 py-1.5 text-xs text-karsa-muted"
-                >
-                  {f.name}
-                  <span className="text-karsa-faint">
-                    {" "}
-                    · {f.audience === "staff" ? "Internal" : "Client"}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </section>
-      ) : (
-        <section
-          className="mt-8 mb-12 grid gap-6"
-          style={{
-            gridTemplateColumns:
-              1 + linkedForms.length <= 1
-                ? "minmax(0, 1fr)"
-                : `repeat(auto-fit, minmax(11rem, 1fr))`,
-          }}
-        >
-          <div>
-            <h2 className="text-sm font-medium text-karsa-text">Appointments</h2>
-            <p className="mt-1 text-[11px] text-karsa-faint">
-              Details pulled from booking form
-            </p>
-            <ul className="mt-4 space-y-2">
-              {appts.map((a) => {
-                const svc = services.find((s) => s.id === a.serviceId);
-                return (
-                  <li key={a.id}>
-                    <EntityOpenButton
-                      kind="appointment"
-                      id={a.id}
-                      className="flex w-full items-center gap-2 border border-karsa-border-subtle px-3 py-2 text-left text-sm transition-colors hover:border-karsa-accent"
-                    >
-                      <span
-                        className={
-                          a.paymentStatus === "paid"
-                            ? "text-karsa-accent-strong"
-                            : "text-karsa-warning"
-                        }
-                      >
-                        {a.paymentStatus === "paid" ? "✓" : "○"}
-                      </span>
-                      <span className="min-w-0">
-                        <span className="block text-karsa-text">
-                          {shortDate(a.date)}
-                          {svc ? ` · ${svc.name}` : ""}
-                        </span>
-                        <span className="mt-0.5 block text-xs text-karsa-muted">
-                          {formatClock(a.startMin)}
-                          {a.date >= today ? " · upcoming" : ""}
-                        </span>
-                      </span>
-                    </EntityOpenButton>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-
-          {linkedForms.map((form) => (
-            <div key={form.id}>
-              <h2 className="text-sm font-medium text-karsa-text">{form.name}</h2>
-              <p className="mt-1 text-[11px] text-karsa-faint">
-                {form.audience === "staff" ? "Internal" : "Client"} · per
-                appointment
-              </p>
-              <p className="mt-4 text-sm leading-relaxed text-karsa-muted">
-                In the live app each linked form shows Submitted / Not started
-                per appointment so you can fill Client Intake and other forms
-                from the profile.
-              </p>
-              <ul className="mt-3 space-y-2">
-                {appts.map((a) => (
-                  <li
-                    key={`${a.id}:${form.id}`}
-                    className="flex items-center gap-2 border border-karsa-border-subtle px-3 py-2 text-sm"
-                  >
-                    <span className="text-karsa-warning">○</span>
-                    <span className="min-w-0">
-                      <span className="block truncate text-karsa-text">
-                        {shortDate(a.date)}
-                      </span>
-                      <span className="mt-0.5 block text-xs text-karsa-muted">
-                        Not started (demo)
-                      </span>
-                    </span>
-                  </li>
+      {(() => {
+        const colCount = 1 + linkedForms.length;
+        const cardClass =
+          "flex h-full min-h-[4.25rem] w-full items-center gap-2 border border-karsa-border-subtle px-3 py-2 text-left text-sm transition-colors hover:border-karsa-accent";
+        const profileFiles = importedFiles.filter((f) => f.clientId === client.id);
+        const generalFiles = profileFiles.filter((f) => !f.appointmentId);
+        return (
+          <>
+            <section className="mt-8 mb-12 overflow-x-auto">
+              <div
+                className={`grid items-stretch gap-x-4 gap-y-2 ${
+                  colCount > 1 ? "min-w-[36rem]" : ""
+                }`}
+                style={{
+                  gridTemplateColumns:
+                    colCount <= 1
+                      ? "minmax(0, 1fr)"
+                      : `repeat(${colCount}, minmax(11rem, 1fr))`,
+                }}
+              >
+                <div>
+                  <h2 className="text-sm font-medium text-karsa-text">
+                    Appointments
+                  </h2>
+                  <p className="mt-1 text-[11px] text-karsa-faint">
+                    Details pulled from booking form
+                  </p>
+                </div>
+                {linkedForms.map((form) => (
+                  <div key={form.id}>
+                    <h2 className="text-sm font-medium text-karsa-text">
+                      {form.name}
+                    </h2>
+                    <p className="mt-1 text-[11px] text-karsa-faint">
+                      {form.audience === "staff" ? "Internal" : "Client"} · per
+                      appointment
+                    </p>
+                  </div>
                 ))}
-              </ul>
-            </div>
-          ))}
-        </section>
-      )}
+
+                {appts.length === 0 ? (
+                  <p className="col-span-full mt-2 text-sm text-karsa-faint">
+                    None yet.
+                  </p>
+                ) : (
+                  appts.flatMap((a) => {
+                    const svc = services.find((s) => s.id === a.serviceId);
+                    const imported = a.source === "import_placeholder";
+                    const status = imported
+                      ? "imported"
+                      : `${appointmentStatus(a)}/${a.paymentStatus === "paid" ? "paid" : a.paymentStatus === "partial" ? "partial" : "unpaid"}`;
+                    const appointmentCard = imported ? (
+                      <div key={a.id} className={cardClass}>
+                        <span className="text-karsa-muted">–</span>
+                        <span className="min-w-0">
+                          <span className="block text-karsa-text">
+                            {shortDate(a.date)}
+                          </span>
+                          <span className="mt-0.5 block text-xs capitalize text-karsa-muted">
+                            {status}
+                          </span>
+                        </span>
+                      </div>
+                    ) : (
+                      <EntityOpenButton
+                        key={a.id}
+                        kind="appointment"
+                        id={a.id}
+                        className={cardClass}
+                      >
+                        <span
+                          className={
+                            a.paymentStatus === "paid"
+                              ? "text-karsa-accent-strong"
+                              : "text-karsa-warning"
+                          }
+                        >
+                          {a.paymentStatus === "paid" ? "✓" : "○"}
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block text-karsa-text">
+                            {shortDate(a.date)}
+                            {svc ? ` · ${svc.name}` : ""}
+                          </span>
+                          <span className="mt-0.5 block text-xs capitalize text-karsa-muted">
+                            {status}
+                            {a.date >= today ? " · upcoming" : ""}
+                          </span>
+                        </span>
+                      </EntityOpenButton>
+                    );
+
+                    const formCards = linkedForms.map((form) => {
+                      const file = profileFiles.find(
+                        (f) => f.appointmentId === a.id && f.formId === form.id,
+                      );
+                      return (
+                        <div
+                          key={`${a.id}:${form.id}`}
+                          className={cardClass}
+                        >
+                          <span
+                            className={
+                              file
+                                ? "text-karsa-accent-strong"
+                                : "text-karsa-warning"
+                            }
+                          >
+                            {file ? "✓" : "○"}
+                          </span>
+                          <span className="min-w-0">
+                            <span className="block truncate text-karsa-text">
+                              {shortDate(a.date)}
+                            </span>
+                            <span className="mt-0.5 block text-xs text-karsa-muted">
+                              {file ? file.filename : "Not done"}
+                            </span>
+                          </span>
+                        </div>
+                      );
+                    });
+
+                    return [appointmentCard, ...formCards];
+                  })
+                )}
+              </div>
+            </section>
+            {generalFiles.length > 0 ? (
+              <section className="mb-12">
+                <h2 className="text-sm font-medium text-karsa-text">
+                  Saved forms
+                </h2>
+                <p className="mt-1 text-[11px] text-karsa-faint">
+                  Files imported onto this profile that are not tied to a visit
+                </p>
+                <ul className="mt-4 space-y-2">
+                  {generalFiles.map((file) => (
+                    <li
+                      key={file.id}
+                      className="border border-karsa-border-subtle px-3 py-2 text-sm"
+                    >
+                      <span className="block text-karsa-text">{file.formName}</span>
+                      <span className="mt-0.5 block text-xs text-karsa-muted">
+                        {file.filename}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+          </>
+        );
+      })()}
     </div>
   );
 }
 
 export function EmployeeProfilePage() {
   const { id } = useParams();
-  const { employees, services, locations, appointments } = useDemoStore();
+  const { employees, services, locations, appointments, importedFiles } =
+    useDemoStore();
   const employee = employees.find((e) => e.id === id);
 
   const [availability, setAvailability] = useState<EmployeeAvailability[]>([]);
@@ -739,6 +776,30 @@ export function EmployeeProfilePage() {
           Save services
         </button>
       </section>
+
+      {importedFiles.filter((f) => f.employeeId === employee.id).length > 0 ? (
+        <section className="mt-8">
+          <h2 className="text-sm font-medium text-karsa-text">Saved forms</h2>
+          <p className="mt-1 text-[11px] text-karsa-faint">
+            Files imported onto this employee profile
+          </p>
+          <ul className="mt-4 space-y-2">
+            {importedFiles
+              .filter((f) => f.employeeId === employee.id)
+              .map((file) => (
+                <li
+                  key={file.id}
+                  className="border border-karsa-border-subtle px-3 py-2 text-sm"
+                >
+                  <span className="block text-karsa-text">{file.formName}</span>
+                  <span className="mt-0.5 block text-xs text-karsa-muted">
+                    {file.filename}
+                  </span>
+                </li>
+              ))}
+          </ul>
+        </section>
+      ) : null}
 
       <section className="mt-8 border border-karsa-border-subtle p-4">
         <h2 className="text-sm font-medium text-karsa-text">Locations</h2>
