@@ -1,5 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { DemoRoleSwitcher } from "./DemoRoleSwitcher";
+import { ThemeToggle } from "./ThemeToggle";
 import {
   LOCATION_FILTER_ALL,
   useDemoLocationScope,
@@ -61,6 +63,8 @@ export function HistoryNav() {
         </button>
       </div>
 
+      <div className="flex items-center gap-2">
+        <DemoRoleSwitcher />
       <div ref={rootRef} className="relative shrink-0">
         <button
           type="button"
@@ -126,6 +130,8 @@ export function HistoryNav() {
             })}
           </ul>
         ) : null}
+      </div>
+        <ThemeToggle />
       </div>
     </div>
   );

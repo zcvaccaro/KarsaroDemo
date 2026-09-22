@@ -140,6 +140,12 @@ export const demoNav: NavGroup[] = [
         mode: "shell",
       },
       {
+        href: "/dashboard/settings/website",
+        label: "Your Website",
+        description: "Copy your Book Now link and add it to a site",
+        mode: "interactive",
+      },
+      {
         href: "/dashboard/settings/google",
         label: "Google Calendar",
         description: "Workspace connect and sync",
@@ -154,6 +160,34 @@ export const demoNav: NavGroup[] = [
     ],
   },
 ];
+
+const ADMIN_ONLY_HREFS = new Set([
+  "/dashboard/insights/metrics",
+  "/dashboard/insights/income",
+  "/dashboard/settings/booking-flow",
+  "/dashboard/locations",
+  "/dashboard/settings/billing",
+  "/dashboard/settings/sync",
+  "/dashboard/settings/website",
+  "/dashboard/settings/google",
+  "/dashboard/settings/drive",
+]);
+
+export function isAdminOnlyHref(pathname: string) {
+  return [...ADMIN_ONLY_HREFS].some(
+    (href) => pathname === href || pathname.startsWith(`${href}/`),
+  );
+}
+
+export function demoNavForRole(role: string): NavGroup[] {
+  if (role === "admin") return demoNav;
+  return demoNav
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => !ADMIN_ONLY_HREFS.has(item.href)),
+    }))
+    .filter((group) => group.items.length > 0 && group.label !== "Insights");
+}
 
 export function isNavActive(pathname: string, href: string) {
   if (href === "/dashboard" || href === "/dashboard/settings") {

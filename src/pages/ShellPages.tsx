@@ -552,7 +552,12 @@ export function ClientsPage() {
           clients are added when someone books (here or in the full product’s
           public booking page). Open a profile to edit details or use{" "}
           <PageLink to="/dashboard/bookings/new">Book Now</PageLink>. You can{" "}
-          <PageLink to="/dashboard/clients/import">import client data</PageLink>{" "}
+          <PageLink
+            to="/dashboard/clients/import"
+            className="karsaro-onboarding-import-target"
+          >
+            import client data
+          </PageLink>{" "}
           from your previous booking software here as well.
         </>
       }

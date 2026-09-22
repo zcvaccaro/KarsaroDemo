@@ -8,7 +8,7 @@ export function HelpChatWidget() {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="karsaro-help-widget fixed right-4 bottom-4 z-40 md:right-6 md:bottom-6">
+    <div className="karsaro-help-widget fixed right-4 bottom-4 z-40 flex flex-col items-end md:right-6 md:bottom-6">
       {open ? (
         <div className="mb-3 flex max-h-[min(70vh,32rem)] w-[min(calc(100vw-2rem),22rem)] flex-col overflow-hidden rounded-lg border border-karsa-border bg-karsa-bg shadow-xl">
           <div className="flex items-start justify-between gap-2 border-b border-karsa-border-subtle px-3 py-2">

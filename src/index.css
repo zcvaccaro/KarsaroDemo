@@ -15,8 +15,31 @@
   --karsa-accent-strong: #b4c7b6;
   --karsa-danger: #c48989;
   --karsa-warning: #c4b089;
+  --karsaro-orbit-turn: 180deg;
+  --karsaro-theme-duration: 0.9s;
+  --karsaro-theme-ease: cubic-bezier(0.45, 0.05, 0.2, 1);
   --font-display: "Fraunces", Georgia, "Times New Roman", serif;
   --font-sans: "Manrope", system-ui, sans-serif;
+  color-scheme: dark;
+}
+
+html[data-theme="light"] {
+  --karsa-bg: #f7f4ef;
+  --karsa-bg-elevated: #fffaf4;
+  --karsa-surface: #ffffff;
+  --karsa-surface-hover: #efeae3;
+  --karsa-border: #e7e5e4;
+  --karsa-border-subtle: #ebe7e1;
+  --karsa-text: #1c1917;
+  --karsa-text-muted: #57534e;
+  --karsa-text-faint: #78716c;
+  --karsa-accent: #6f8673;
+  --karsa-accent-soft: rgba(111, 134, 115, 0.16);
+  --karsa-accent-strong: #4d6354;
+  --karsa-danger: #a65d5d;
+  --karsa-warning: #9a7b3c;
+  --karsaro-orbit-turn: 0deg;
+  color-scheme: light;
 }
 
 @theme inline {
@@ -233,4 +256,59 @@ input[type="button"]:not(:disabled):hover {
   .karsaro-help-orbit-inner {
     animation: none;
   }
+}
+
+.karsaro-theme-toggle-mark {
+  display: inline-flex;
+  transform: rotate(var(--karsaro-orbit-turn, 0deg));
+  transform-origin: 50% 50%;
+}
+
+html.karsaro-theme-ready {
+  transition:
+    --karsa-bg var(--karsaro-theme-duration) var(--karsaro-theme-ease),
+    --karsa-bg-elevated var(--karsaro-theme-duration) var(--karsaro-theme-ease),
+    --karsa-surface var(--karsaro-theme-duration) var(--karsaro-theme-ease),
+    --karsa-surface-hover var(--karsaro-theme-duration) var(--karsaro-theme-ease),
+    --karsa-border var(--karsaro-theme-duration) var(--karsaro-theme-ease),
+    --karsa-border-subtle var(--karsaro-theme-duration) var(--karsaro-theme-ease),
+    --karsa-text var(--karsaro-theme-duration) var(--karsaro-theme-ease),
+    --karsa-text-muted var(--karsaro-theme-duration) var(--karsaro-theme-ease),
+    --karsa-text-faint var(--karsaro-theme-duration) var(--karsaro-theme-ease),
+    --karsa-accent var(--karsaro-theme-duration) var(--karsaro-theme-ease),
+    --karsa-accent-soft var(--karsaro-theme-duration) var(--karsaro-theme-ease),
+    --karsa-accent-strong var(--karsaro-theme-duration) var(--karsaro-theme-ease),
+    --karsa-danger var(--karsaro-theme-duration) var(--karsaro-theme-ease),
+    --karsa-warning var(--karsaro-theme-duration) var(--karsaro-theme-ease);
+}
+
+html.karsaro-theme-ready .karsaro-theme-toggle-mark {
+  transition: transform var(--karsaro-theme-duration) var(--karsaro-theme-ease);
+}
+
+html[data-theme="light"] button:not(:disabled):hover,
+html[data-theme="light"] input[type="submit"]:not(:disabled):hover,
+html[data-theme="light"] input[type="button"]:not(:disabled):hover {
+  filter: brightness(0.97);
+}
+
+button.karsaro-theme-toggle:hover {
+  filter: none;
+}
+
+body[data-karsaro-spotlight="help"] .karsaro-help-widget {
+  z-index: 60;
+}
+
+body[data-karsaro-spotlight="help"] .karsaro-help-button {
+  box-shadow:
+    0 0 0 3px var(--karsa-bg),
+    0 0 0 6px var(--karsa-accent);
+}
+
+body[data-karsaro-spotlight="import"] .karsaro-onboarding-import-target {
+  border-radius: 2px;
+  outline: 2px solid var(--karsa-accent);
+  outline-offset: 4px;
+  box-shadow: 0 0 0 6px var(--karsa-accent-soft);
 }

@@ -22,7 +22,6 @@ function CountStepper({
   hint,
   value,
   min,
-  max,
   onChange,
   decrementLabel,
   incrementLabel,
@@ -31,7 +30,6 @@ function CountStepper({
   hint: string;
   value: number;
   min: number;
-  max: number;
   onChange: (n: number) => void;
   decrementLabel: string;
   incrementLabel: string;
@@ -58,9 +56,8 @@ function CountStepper({
         <button
           type="button"
           aria-label={incrementLabel}
-          disabled={value >= max}
-          onClick={() => onChange(Math.min(max, value + 1))}
-          className="rounded-md border border-karsa-border px-3 py-1.5 text-sm text-karsa-text disabled:opacity-40"
+          onClick={() => onChange(value + 1)}
+          className="rounded-md border border-karsa-border px-3 py-1.5 text-sm text-karsa-text"
         >
           +
         </button>
@@ -102,7 +99,6 @@ export function BillingPlans({
             hint={`Admins and receptionists who are not bookable do not count. Extra seats are ${formatUsd(EXTRA_PRACTITIONER_USD)}. Studio caps at 10. Practice includes 15, then charges extras.`}
             value={bookableCount}
             min={1}
-            max={40}
             onChange={setBookableCount}
             decrementLabel="Fewer practitioners"
             incrementLabel="More practitioners"
@@ -112,7 +108,6 @@ export function BillingPlans({
             hint={`Solo is one site. Studio can add a second for ${formatUsd(EXTRA_LOCATION_USD)} with no extra seats. Practice adds sites at ${formatUsd(EXTRA_LOCATION_USD)} each.`}
             value={locationCount}
             min={1}
-            max={12}
             onChange={setLocationCount}
             decrementLabel="Fewer locations"
             incrementLabel="More locations"

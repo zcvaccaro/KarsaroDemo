@@ -1,5 +1,6 @@
 import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
 import { ShellLayout } from "./components/ShellLayout";
+import { ThemeProvider } from "./components/ThemeProvider";
 import { BookingFlowPage } from "./pages/BookingFlowPage";
 import { CalendarPage } from "./pages/CalendarPage";
 import { EmailPage } from "./pages/EmailPage";
@@ -33,9 +34,11 @@ import {
   SyncSetupPage,
   WaitlistPage,
 } from "./pages/ShellPages";
+import { WebsitePage } from "./pages/WebsitePage";
 
 export default function App() {
   return (
+    <ThemeProvider>
     <HashRouter>
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
@@ -89,11 +92,13 @@ export default function App() {
           <Route path="/dashboard/insights/metrics" element={<MetricsPage />} />
           <Route path="/dashboard/insights/income" element={<IncomePage />} />
           <Route path="/dashboard/settings/sync" element={<SyncSetupPage />} />
+          <Route path="/dashboard/settings/website" element={<WebsitePage />} />
           <Route path="/dashboard/settings/google" element={<GooglePage />} />
           <Route path="/dashboard/settings/drive" element={<DrivePage />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
       </Routes>
     </HashRouter>
+    </ThemeProvider>
   );
 }

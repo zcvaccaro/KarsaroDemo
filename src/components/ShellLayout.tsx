@@ -1,13 +1,15 @@
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { KarsaroLogo } from "./Logo";
 import { HistoryNav } from "./HistoryNav";
-import { demoNav, isNavActive } from "../lib/nav";
+import { demoNavForRole, isAdminOnlyHref, isNavActive } from "../lib/nav";
 import { orderQuickActions } from "../lib/quick-actions";
 import { resetDemoState } from "../lib/store";
 import { useDemoStore } from "../lib/use-demo-store";
+import { useViewerRole, viewerRoleLabel } from "../lib/viewer-role";
 import { EntityModalsProvider } from "./EntityModals";
 import { HelpChatWidget } from "./HelpChatWidget";
+import { OnboardingTour } from "./OnboardingTour";
 
 const CHIP_LABEL: Record<string, string> = {
   "/dashboard/calendar": "Calendar",
@@ -26,6 +28,8 @@ const CHIP_LABEL: Record<string, string> = {
 
 function DemoSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const { pathname } = useLocation();
+  const role = useViewerRole();
+  const groups = demoNavForRole(role);
 
   return (
     <aside className="flex h-full w-64 shrink-0 flex-col border-r border-karsa-border bg-karsa-bg-elevated">
@@ -41,7 +45,7 @@ function DemoSidebar({ onNavigate }: { onNavigate?: () => void }) {
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-4">
-        {demoNav.map((group) => (
+        {groups.map((group) => (
           <div key={group.label} className="mb-6">
             <p className="mb-2 px-2 text-[11px] font-medium tracking-[0.16em] text-karsa-faint uppercase">
               {group.label}
@@ -78,7 +82,9 @@ function DemoSidebar({ onNavigate }: { onNavigate?: () => void }) {
         <p className="truncate text-sm text-karsa-muted">
           demo@sample-studio.local
         </p>
-        <p className="mt-1 text-xs capitalize text-karsa-faint">Role: admin</p>
+        <p className="mt-1 text-xs text-karsa-faint">
+          Role: {viewerRoleLabel(role)}
+        </p>
         <button
           type="button"
           onClick={() => {
@@ -103,6 +109,8 @@ function DemoSidebar({ onNavigate }: { onNavigate?: () => void }) {
 
 export function ShellLayout() {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const role = useViewerRole();
   const [menuOpen, setMenuOpen] = useState(false);
   const { quickActionsOrder } = useDemoStore();
   const widgetChips = useMemo(
@@ -113,6 +121,12 @@ export function ShellLayout() {
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
   }, [pathname]);
+
+  useEffect(() => {
+    if (role !== "admin" && isAdminOnlyHref(pathname)) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [role, pathname, navigate]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -210,6 +224,7 @@ export function ShellLayout() {
           </EntityModalsProvider>
         </main>
         <HelpChatWidget />
+        <OnboardingTour />
       </div>
     </div>
   );
