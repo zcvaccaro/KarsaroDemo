@@ -157,6 +157,18 @@ export const demoNav: NavGroup[] = [
         description: "Folders and sync rules",
         mode: "shell",
       },
+      {
+        href: "/dashboard/settings/import",
+        label: "Import",
+        description: "Clients, scans, and notes",
+        mode: "interactive",
+      },
+      {
+        href: "/dashboard/settings/export",
+        label: "Export",
+        description: "Download your business data",
+        mode: "interactive",
+      },
     ],
   },
 ];
@@ -171,6 +183,8 @@ const ADMIN_ONLY_HREFS = new Set([
   "/dashboard/settings/website",
   "/dashboard/settings/google",
   "/dashboard/settings/drive",
+  "/dashboard/settings/import",
+  "/dashboard/settings/export",
 ]);
 
 export function isAdminOnlyHref(pathname: string) {

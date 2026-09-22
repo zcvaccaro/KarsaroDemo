@@ -108,6 +108,7 @@ export type Appointment = {
   durationMin: number;
   status?: AppointmentStatus;
   paymentStatus?: "paid" | "unpaid" | "partial";
+  tipCents?: number;
   source?: "karsaro" | "import_placeholder";
 };
 
@@ -134,16 +135,30 @@ export function showsOnCalendar(a: Appointment): boolean {
 }
 
 function withAppointmentStatus(a: Appointment): Appointment {
-  if (a.status) return a;
-  let h = 0;
-  for (let i = 0; i < a.id.length; i++) {
-    h = (h + a.id.charCodeAt(i) * (i + 1)) % 11;
+  let next = a;
+  if (!a.status) {
+    let h = 0;
+    for (let i = 0; i < a.id.length; i++) {
+      h = (h + a.id.charCodeAt(i) * (i + 1)) % 11;
+    }
+    if (h === 0) next = { ...a, status: "cancelled" };
+    else if (h === 1) next = { ...a, status: "no_show" };
+    else next = { ...a, status: a.date < todayISO() ? "completed" : "scheduled" };
   }
-  if (h === 0) return { ...a, status: "cancelled" };
-  if (h === 1) return { ...a, status: "no_show" };
+  const status = appointmentStatus(next);
+  if (next.paymentStatus && next.tipCents != null) return next;
+  let h = 0;
+  for (let i = 0; i < next.id.length; i++) {
+    h = (h + next.id.charCodeAt(i) * (i + 1)) % 17;
+  }
+  const paid =
+    status === "completed" && next.source !== "import_placeholder" && h % 3 !== 0;
   return {
-    ...a,
-    status: a.date < todayISO() ? "completed" : "scheduled",
+    ...next,
+    paymentStatus: next.paymentStatus ?? (paid ? "paid" : "unpaid"),
+    tipCents:
+      next.tipCents ??
+      (paid && h % 5 === 0 ? 1000 + (h % 3) * 500 : 0),
   };
 }
 

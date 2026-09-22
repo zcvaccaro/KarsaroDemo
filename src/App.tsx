@@ -29,6 +29,8 @@ import {
   DrivePage,
   EmployeesPage,
   GooglePage,
+  ExportPage,
+  ImportPage,
   IncomePage,
   MetricsPage,
   SyncSetupPage,
@@ -92,6 +94,8 @@ export default function App() {
           <Route path="/dashboard/insights/metrics" element={<MetricsPage />} />
           <Route path="/dashboard/insights/income" element={<IncomePage />} />
           <Route path="/dashboard/settings/sync" element={<SyncSetupPage />} />
+          <Route path="/dashboard/settings/import" element={<ImportPage />} />
+          <Route path="/dashboard/settings/export" element={<ExportPage />} />
           <Route path="/dashboard/settings/website" element={<WebsitePage />} />
           <Route path="/dashboard/settings/google" element={<GooglePage />} />
           <Route path="/dashboard/settings/drive" element={<DrivePage />} />

@@ -14,6 +14,7 @@ import {
   appointmentStatus,
   clientDisplayName,
   confirmationPageTitle,
+  formatClock,
   importDemoAttachment,
   isBookableEmployee,
   todayISO,
@@ -997,6 +998,170 @@ function DemoImportForms() {
   );
 }
 
+export function ImportPage() {
+  return (
+    <PageChrome
+      eyebrow="Sync"
+      title="Import"
+      blurb={
+        <>
+          Bring clients in from another product, and attach scans or files to a
+          client or employee as one of your saved forms. Take data the other way
+          on <PageLink to="/dashboard/settings/export">Export</PageLink>.
+        </>
+      }
+      maxWidth="max-w-3xl"
+    >
+      <section className="border border-karsa-border-subtle p-5">
+        <h2 className="text-lg font-medium text-karsa-text">Client import</h2>
+        <p className="mt-2 text-sm leading-relaxed text-karsa-muted">
+          Export a client CSV from the product you are leaving, then map names,
+          emails, phones, and notes.
+        </p>
+        <Link
+          to="/dashboard/clients/import"
+          className="mt-4 inline-flex cursor-pointer rounded-md bg-karsa-accent px-4 py-2.5 text-sm font-medium text-karsa-bg transition-colors hover:bg-karsa-accent-strong"
+        >
+          Open client CSV import
+        </Link>
+      </section>
+      <section className="border border-karsa-border-subtle p-5">
+        <h2 className="text-lg font-medium text-karsa-text">Forms and notes</h2>
+        <p className="mt-2 text-sm leading-relaxed text-karsa-muted">
+          Upload a scan or file, pick a client or employee, and pick one of your
+          saved forms as the name.
+        </p>
+        <DemoImportForms />
+      </section>
+    </PageChrome>
+  );
+}
+
+function downloadText(filename: string, text: string) {
+  const blob = new Blob([text], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function csvCell(value: string | number | null | undefined) {
+  const text = value == null ? "" : String(value);
+  return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+export function ExportPage() {
+  const { clients, appointments, employees, services, importedFiles } =
+    useDemoStore();
+
+  return (
+    <PageChrome
+      eyebrow="Sync"
+      title="Export"
+      blurb={
+        <>
+          Download your demo data as CSVs. Live Karsaro also includes
+          appointment notes and imported-file lists. Bring data the other way on{" "}
+          <PageLink to="/dashboard/settings/import">Import</PageLink>.
+        </>
+      }
+      maxWidth="max-w-3xl"
+    >
+      <section className="border border-karsa-border-subtle p-5">
+        <h2 className="text-lg font-medium text-karsa-text">Clients</h2>
+        <p className="mt-2 text-sm leading-relaxed text-karsa-muted">
+          Names, emails, phones, and profile notes.
+        </p>
+        <button
+          type="button"
+          className="mt-4 rounded-md bg-karsa-accent px-4 py-2.5 text-sm font-medium text-karsa-bg"
+          onClick={() => {
+            const header = "first_name,last_name,email,phone,notes";
+            const lines = clients.map((c) =>
+              [c.firstName, c.lastName, c.email, c.phone, c.notes]
+                .map(csvCell)
+                .join(","),
+            );
+            downloadText("karsaro-clients.csv", [header, ...lines].join("\r\n"));
+          }}
+        >
+          Download Clients CSV
+        </button>
+      </section>
+      <section className="border border-karsa-border-subtle p-5">
+        <h2 className="text-lg font-medium text-karsa-text">Appointments</h2>
+        <p className="mt-2 text-sm leading-relaxed text-karsa-muted">
+          Visit dates, status, payment, client, employee, and service.
+        </p>
+        <button
+          type="button"
+          className="mt-4 rounded-md bg-karsa-accent px-4 py-2.5 text-sm font-medium text-karsa-bg"
+          onClick={() => {
+            const header =
+              "date,start,status,payment_status,source,client,employee,service";
+            const lines = appointments.map((a) => {
+              const client = clients.find((c) => c.id === a.clientId);
+              const employee = employees.find((e) => e.id === a.employeeId);
+              const service = services.find((s) => s.id === a.serviceId);
+              return [
+                a.date,
+                formatClock(a.startMin),
+                appointmentStatus(a),
+                a.paymentStatus ?? "",
+                a.source ?? "karsaro",
+                client ? clientDisplayName(client) : "",
+                employee?.name ?? "",
+                service?.name ?? "",
+              ]
+                .map(csvCell)
+                .join(",");
+            });
+            downloadText(
+              "karsaro-appointments.csv",
+              [header, ...lines].join("\r\n"),
+            );
+          }}
+        >
+          Download Appointments CSV
+        </button>
+      </section>
+      <section className="border border-karsa-border-subtle p-5">
+        <h2 className="text-lg font-medium text-karsa-text">Imported files</h2>
+        <p className="mt-2 text-sm leading-relaxed text-karsa-muted">
+          Scans attached on Import, with the form name and profile.
+        </p>
+        <button
+          type="button"
+          className="mt-4 rounded-md bg-karsa-accent px-4 py-2.5 text-sm font-medium text-karsa-bg"
+          onClick={() => {
+            const header = "filename,form_name,client,employee,date";
+            const lines = importedFiles.map((f) => {
+              const client = clients.find((c) => c.id === f.clientId);
+              const employee = employees.find((e) => e.id === f.employeeId);
+              return [
+                f.filename,
+                f.formName,
+                client ? clientDisplayName(client) : "",
+                employee?.name ?? "",
+                f.date ?? "",
+              ]
+                .map(csvCell)
+                .join(",");
+            });
+            downloadText("karsaro-files.csv", [header, ...lines].join("\r\n"));
+          }}
+        >
+          Download Files CSV
+        </button>
+      </section>
+    </PageChrome>
+  );
+}
+
 export function SyncSetupPage() {
   return (
     <PageChrome
@@ -1007,7 +1172,10 @@ export function SyncSetupPage() {
           Connect Google so appointments and files stay in one place. This demo
           only shows the steps — the full product does the real sign-in and
           keeps <PageLink to="/dashboard/calendar">Calendar</PageLink> visits
-          matched to Google calendars.
+          matched to Google calendars. Use{" "}
+          <PageLink to="/dashboard/settings/import">Import</PageLink> and{" "}
+          <PageLink to="/dashboard/settings/export">Export</PageLink> to move
+          data in or out.
         </>
       }
       maxWidth="max-w-3xl"
@@ -1084,42 +1252,6 @@ export function SyncSetupPage() {
             Configure Google Drive
           </Link>
         </li>
-
-        <li className="border border-karsa-border-subtle p-5">
-          <p className="text-xs font-medium tracking-[0.12em] text-karsa-faint uppercase">
-            Import
-          </p>
-          <h2 className="mt-2 text-lg font-medium text-karsa-text">
-            Bring clients, forms, and notes in
-          </h2>
-          <div className="mt-5 space-y-6">
-            <div>
-              <h3 className="text-sm font-medium text-karsa-text">
-                Client import
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-karsa-muted">
-                Export a client CSV from the product you are leaving, then map
-                names, emails, phones, and notes.
-              </p>
-              <Link
-                to="/dashboard/clients/import"
-                className="mt-4 inline-flex cursor-pointer rounded-md bg-karsa-accent px-4 py-2.5 text-sm font-medium text-karsa-bg transition-colors hover:bg-karsa-accent-strong"
-              >
-                Import clients
-              </Link>
-            </div>
-            <div className="border-t border-karsa-border-subtle pt-5">
-              <h3 className="text-sm font-medium text-karsa-text">
-                Forms and notes
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-karsa-muted">
-                Upload a scan or file, pick a client or employee, and pick one
-                of your saved forms as the name.
-              </p>
-              <DemoImportForms />
-            </div>
-          </div>
-        </li>
       </ol>
 
       <FullVersionNote more="Live OAuth connects Google Workspace, maps each employee calendar, and optionally turns on Drive folders for form PDFs — with connection health and re-auth from this same flow." />
@@ -1137,7 +1269,6 @@ export function SyncSetupPage() {
           <li>
             Busy times from Google help block slots on public{" "}
             <PageLink to="/dashboard/bookings/new">Book Now</PageLink> and staff
-            booking.
             booking.
           </li>
           <li>
@@ -1426,19 +1557,74 @@ export function MetricsPage() {
   );
 }
 
+function money(cents: number) {
+  return new Intl.NumberFormat(undefined, {
+    style: "currency",
+    currency: "USD",
+  }).format(cents / 100);
+}
+
 export function IncomePage() {
-  const { locations } = useDemoStore();
+  const { locations, appointments, employees, services } = useDemoStore();
   const [locationId, setLocationId] = useState("all");
+  const [employeeId, setEmployeeId] = useState("");
+
+  const paid = useMemo(() => {
+    return appointments.filter((a) => {
+      if (appointmentStatus(a) !== "completed") return false;
+      if (a.paymentStatus !== "paid") return false;
+      if (a.source === "import_placeholder") return false;
+      if (employeeId && a.employeeId !== employeeId) return false;
+      if (locationId !== "all") {
+        const service = services.find((s) => s.id === a.serviceId);
+        if (
+          service &&
+          !isServiceAvailableAtLocation(service.locationIds, locationId)
+        ) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [appointments, employeeId, locationId, services]);
+
+  const collectedCents = paid.reduce((sum, a) => {
+    const service = services.find((s) => s.id === a.serviceId);
+    const price = Math.round((service?.price ?? 0) * 100);
+    return sum + price + (a.tipCents ?? 0);
+  }, 0);
+  const tipCents = paid.reduce((sum, a) => sum + (a.tipCents ?? 0), 0);
+
+  const tipRows = useMemo(() => {
+    const map = new Map<string, { id: string; label: string; tipCents: number; visits: number }>();
+    for (const a of paid) {
+      if (!a.tipCents) continue;
+      const employee = employees.find((e) => e.id === a.employeeId);
+      const id = a.employeeId || "unassigned";
+      const cur = map.get(id);
+      if (cur) {
+        cur.tipCents += a.tipCents;
+        cur.visits += 1;
+      } else {
+        map.set(id, {
+          id,
+          label: employee?.name ?? "Unassigned",
+          tipCents: a.tipCents,
+          visits: 1,
+        });
+      }
+    }
+    return [...map.values()].sort((a, b) => b.tipCents - a.tipCents);
+  }, [paid, employees]);
 
   return (
     <PageChrome
       eyebrow="Insights"
       title="Income"
-      blurb="A rough money picture: finished visits multiplied by each service’s listed price. Live Karsaro also filters by location (including All) and tracks Stripe paid/unpaid separately."
+      blurb="Collected includes tips. The Tips section below is what to pay out per employee for this filter."
       maxWidth="max-w-6xl"
     >
-      <FullVersionNote more="Full Karsaro multiplies completed appointments by each service’s list price, with timeframe, location, and practitioner filters, clearly labeled as estimated revenue." />
-      <div className="mb-6 max-w-xs">
+      <div className="mb-6 grid gap-4 sm:grid-cols-2">
         <label className="block text-xs font-medium tracking-wide text-karsa-faint uppercase">
           Location
           <div className="mt-1">
@@ -1453,21 +1639,86 @@ export function IncomePage() {
             />
           </div>
         </label>
+        <label className="block text-xs font-medium tracking-wide text-karsa-faint uppercase">
+          Employee
+          <div className="mt-1">
+            <KarsaSelect
+              aria-label="Employee"
+              value={employeeId}
+              options={[
+                { value: "", label: "All employees" },
+                ...employees.map((e) => ({ value: e.id, label: e.name })),
+              ]}
+              onChange={setEmployeeId}
+            />
+          </div>
+        </label>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         <div className="rounded-md border border-karsa-border-subtle px-4 py-3">
           <p className="text-xs tracking-wide text-karsa-faint uppercase">
-            Estimated income
+            Collected
           </p>
-          <p className="mt-1 font-display text-3xl text-karsa-faint">—</p>
+          <p className="mt-1 font-display text-3xl text-karsa-text">
+            {money(collectedCents)}
+          </p>
+          <p className="mt-1 text-xs text-karsa-faint">Includes tips</p>
         </div>
         <div className="rounded-md border border-karsa-border-subtle px-4 py-3">
           <p className="text-xs tracking-wide text-karsa-faint uppercase">
-            Completed visits
+            Tips
           </p>
-          <p className="mt-1 font-display text-3xl text-karsa-faint">—</p>
+          <p className="mt-1 font-display text-3xl text-karsa-text">
+            {money(tipCents)}
+          </p>
+          <p className="mt-1 text-xs text-karsa-faint">To pay out to staff</p>
+        </div>
+        <div className="rounded-md border border-karsa-border-subtle px-4 py-3">
+          <p className="text-xs tracking-wide text-karsa-faint uppercase">
+            Paid visits
+          </p>
+          <p className="mt-1 font-display text-3xl text-karsa-text">
+            {paid.length}
+          </p>
         </div>
       </div>
+      <section className="rounded-md border border-karsa-border-subtle">
+        <div className="border-b border-karsa-border-subtle px-4 py-3">
+          <h2 className="text-sm font-medium text-karsa-text">
+            Tips by employee
+          </h2>
+          <p className="mt-1 text-xs text-karsa-faint">
+            Tip portion of paid visits. Use this list to decide payouts.
+          </p>
+        </div>
+        {tipRows.length === 0 ? (
+          <p className="px-4 py-6 text-sm text-karsa-faint">
+            No tips in this filter.
+          </p>
+        ) : (
+          <ul className="divide-y divide-karsa-border-subtle">
+            {tipRows.map((row) => (
+              <li
+                key={row.id}
+                className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
+              >
+                <div>
+                  <p className="text-sm font-medium text-karsa-text">
+                    {row.label}
+                  </p>
+                  <p className="mt-0.5 text-xs text-karsa-faint">
+                    {row.visits} tipped payment
+                    {row.visits === 1 ? "" : "s"}
+                  </p>
+                </div>
+                <p className="text-sm font-medium text-karsa-text">
+                  {money(row.tipCents)}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </PageChrome>
   );
 }
