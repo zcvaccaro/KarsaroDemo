@@ -446,7 +446,7 @@ export function ServicesPage() {
       <ExpandableAddSection
         addLabel="Add service"
         list={
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="grid gap-6 min-[1198px]:grid-cols-2">
             {sorted.length === 0 ? (
               <p className="text-center text-sm text-karsa-faint">
                 No services yet.
