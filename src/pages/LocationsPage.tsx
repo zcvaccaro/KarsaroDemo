@@ -287,7 +287,7 @@ export function LocationsPage() {
         addLabel="Add location"
         disabled
         list={
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="grid gap-6 min-[1198px]:grid-cols-2">
             {sorted.length === 0 ? (
               <p className="col-span-full text-center text-sm text-karsa-faint">
                 No locations yet.
@@ -298,7 +298,7 @@ export function LocationsPage() {
                   key={location.id}
                   className={`border border-karsa-border-subtle p-4 ${
                     sorted.length % 2 === 1 && index === sorted.length - 1
-                      ? "lg:col-span-2"
+                      ? "min-[1198px]:col-span-2"
                       : ""
                   }`}
                 >

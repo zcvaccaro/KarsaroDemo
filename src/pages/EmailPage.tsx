@@ -159,7 +159,7 @@ export function EmailPage() {
         </p>
       </div>
 
-      <div className="mt-8 grid gap-6 sm:grid-cols-2">
+      <div className="mt-8 grid gap-6 min-[1198px]:grid-cols-2">
         {ordered.map((t) => (
           <TemplateEditor
             key={`${t.templateType}-${t.id}`}

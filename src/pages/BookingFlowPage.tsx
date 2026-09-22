@@ -741,7 +741,7 @@ export function BookingFlowPage() {
               to “Link to appointment” to make it available here.
             </p>
           ) : (
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-2 min-[1198px]:grid-cols-2 xl:grid-cols-3">
               {clientForms.map((form) => {
                 const inFlow = formsAlreadyInFlow.has(form.id);
                 return (

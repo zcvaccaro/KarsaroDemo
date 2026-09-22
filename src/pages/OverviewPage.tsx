@@ -184,7 +184,7 @@ export function OverviewPage() {
           In the full product, clients book through your public studio link.
         </p>
 
-        <div className="mt-8 grid gap-8 border-t border-karsa-border-subtle/80 pt-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:items-stretch">
+        <div className="mt-8 grid gap-8 border-t border-karsa-border-subtle/80 pt-8 min-[1198px]:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] min-[1198px]:items-stretch">
           <section>
             <QuickActionsGrid initialOrder={state.quickActionsOrder} />
           </section>
@@ -198,7 +198,7 @@ export function OverviewPage() {
         </div>
       </header>
 
-      <div className="mt-10 grid gap-8 md:grid-cols-2">
+      <div className="mt-10 grid gap-8 min-[1198px]:grid-cols-2">
         <section>
           <h2 className="text-sm font-medium text-karsa-text">Up next</h2>
           {upcomingRows.length === 0 ? (

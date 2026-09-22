@@ -83,7 +83,7 @@ function CreateFormPanel() {
         to your account until you click Save form.
       </p>
 
-      <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <ul className="mt-4 grid gap-3 min-[1198px]:grid-cols-2 xl:grid-cols-3">
         {FORM_TEMPLATE_STARTERS.map((t) => (
           <li key={t.key}>
             <Link

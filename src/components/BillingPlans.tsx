@@ -93,7 +93,7 @@ export function BillingPlans({
       </section>
 
       <section className="flex flex-col gap-6 rounded-md border border-karsa-border-subtle p-4">
-        <div className="grid gap-6 sm:grid-cols-2">
+        <div className="grid gap-6 min-[1198px]:grid-cols-2">
           <CountStepper
             label="Bookable practitioners"
             hint={`Admins and receptionists who are not bookable do not count. Extra seats are ${formatUsd(EXTRA_PRACTITIONER_USD)}. Studio caps at 10. Practice includes 15, then charges extras.`}
@@ -141,7 +141,7 @@ export function BillingPlans({
 
       <section className="space-y-3">
         <h2 className="text-sm font-medium text-karsa-text">Plans</h2>
-        <ul className="grid gap-3 lg:grid-cols-3">
+        <ul className="grid gap-3 min-[1198px]:grid-cols-2 xl:grid-cols-3">
           {BILLING_PLANS.map((plan) => (
             <PlanCard
               key={plan.id}

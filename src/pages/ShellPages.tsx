@@ -1654,7 +1654,7 @@ export function IncomePage() {
           </div>
         </label>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-3 min-[1198px]:grid-cols-2 xl:grid-cols-3">
         <div className="rounded-md border border-karsa-border-subtle px-4 py-3">
           <p className="text-xs tracking-wide text-karsa-faint uppercase">
             Collected

@@ -207,7 +207,7 @@ export function ConfirmationMessageEditor({
   );
 
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
+    <div className="grid gap-6 min-[1198px]:grid-cols-2">
       <div>
         <p className="text-sm text-karsa-muted">
           Write what clients see. Use the buttons to insert booking details, or

@@ -272,7 +272,7 @@ export function MetricsClient({
         </label>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 min-[1198px]:grid-cols-2 xl:grid-cols-4">
         {[
           ["Booked", totals.booked],
           ["Completed", totals.completed],
