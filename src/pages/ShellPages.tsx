@@ -854,7 +854,35 @@ export function BusinessPage() {
         lookup on Book Now is always on.
       </p>
 
-      <FullVersionNote more="Business owners edit timezone, buffers, public booking cutoff, Stripe Connect, and the consent / privacy / policy copy that appears on live forms — all persisted per tenant." />
+      <section className="rounded-md border border-karsa-border-subtle p-4">
+        <h2 className="text-sm font-medium text-karsa-text">Policies</h2>
+        <p className="mt-1 text-xs leading-relaxed text-karsa-faint">
+          Consent, privacy, cancellation, and employee agreement wording live
+          here in the full product. Toggle those blocks on the matching forms.
+        </p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          {[
+            "Consent message",
+            "Privacy policy",
+            "Cancellation policy",
+            "Employee agreement",
+          ].map((title) => (
+            <div
+              key={title}
+              className="rounded-md border border-karsa-border-subtle px-3 py-2.5"
+            >
+              <p className="text-sm font-medium text-karsa-text">{title}</p>
+              <p className="mt-1 text-xs text-karsa-faint">
+                {title === "Employee agreement"
+                  ? "Shown on the Employee agreement form for hire signing."
+                  : "Shown on client forms when that block is toggled on."}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <FullVersionNote more="Business owners edit timezone, buffers, public booking cutoff, Stripe Connect, and the consent / privacy / cancellation / employee-agreement copy that appears on live forms — all persisted per tenant." />
     </PageChrome>
   );
 }

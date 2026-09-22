@@ -121,7 +121,7 @@ function ServiceFields({
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid items-end gap-3 sm:grid-cols-2">
         <div className="sm:col-span-2">
           <label className={labelClass}>Name</label>
           <input
@@ -446,7 +446,7 @@ export function ServicesPage() {
       <ExpandableAddSection
         addLabel="Add service"
         list={
-          <div className="grid gap-6 sm:grid-cols-2">
+          <div className="grid gap-6 lg:grid-cols-2">
             {sorted.length === 0 ? (
               <p className="text-center text-sm text-karsa-faint">
                 No services yet.

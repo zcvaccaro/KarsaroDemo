@@ -270,6 +270,13 @@ export const FORM_TEMPLATE_STARTERS: {
       "Staff session notes after a visit — not shown on the public book flow.",
   },
   {
+    key: "employee_agreement",
+    name: "Employee agreement",
+    audience: "staff",
+    description:
+      "Hire paperwork — personal info, optional SSN, and a sign-by employee agreement.",
+  },
+  {
     key: "blank",
     name: "Custom form",
     audience: "client",
@@ -403,6 +410,20 @@ export function sectionsForTemplate(templateKey: string): FormSection[] {
       );
     case "soap":
       return [mk("session", "Session notes", { locked: true })];
+    case "employee_agreement":
+      return [
+        mk("name", "Name"),
+        mk("email", "Email"),
+        mk("phone", "Phone"),
+        mk("dob", "Date of birth"),
+        mk("address", "Address"),
+        mk("ssn", "Social Security number", { enabled: false }),
+        mk("custom_fields", "Custom fields"),
+        mk("employee_agreement", "Employee agreement", {
+          description:
+            "Wording from Settings → Business. Shows the policy plus a sign-by checkbox.",
+        }),
+      ];
     default: {
       // blank / Custom form — production BLANK_FORM_SECTIONS + build-draft defaults
       const blankDefs: {
@@ -413,9 +434,9 @@ export function sectionsForTemplate(templateKey: string): FormSection[] {
         { key: "name", label: "Name" },
         { key: "email", label: "Email" },
         { key: "phone", label: "Phone" },
-        { key: "insurance", label: "Insurance information" },
         { key: "dob", label: "Date of birth" },
         { key: "address", label: "Address" },
+        { key: "insurance", label: "Insurance information" },
         { key: "occupation", label: "Occupation" },
         { key: "scheduling", label: "Service & appointment time" },
         { key: "waitlist_cta", label: "Waitlist link", uiOnly: true },
@@ -516,6 +537,21 @@ export function fieldsForTemplate(templateKey: string): FormField[] {
         mk("session", "digital_signature", "Digital Signature", {
           locked: true,
         }),
+      ];
+    case "employee_agreement":
+      return [
+        mk("name", "first_name", "First Name"),
+        mk("name", "last_name", "Last Name"),
+        mk("email", "email", "Email Address"),
+        mk("phone", "phone", "Phone Number"),
+        mk("dob", "dob", "Date of Birth"),
+        mk("address", "address", "Address"),
+        mk("ssn", "ssn", "Social Security number", { enabled: false }),
+        mk(
+          "employee_agreement",
+          "employee_agreement_agree",
+          "I have read and agree to the employee agreement",
+        ),
       ];
     case "blank":
       // Client blank: session fields are seeded only when audience becomes staff.

@@ -308,7 +308,9 @@ export function FormCustomizerPage() {
 
   const templateKey = form?.templateKey ?? "blank";
   const lockedAudience =
-    templateKey === "booking" || templateKey === "waitlist";
+    templateKey === "booking" ||
+    templateKey === "waitlist" ||
+    templateKey === "employee_agreement";
 
   const visibleSections = useMemo(() => {
     if (!form) return [];
@@ -317,7 +319,13 @@ export function FormCustomizerPage() {
         return templateKey === "booking" || templateKey === "waitlist";
       }
       if (HIDDEN_MAIN_SECTION_KEYS.has(s.key)) return false;
-      if (audience === "staff" && LEGAL_SECTION_KEYS.has(s.key)) return false;
+      if (
+        audience === "staff" &&
+        LEGAL_SECTION_KEYS.has(s.key) &&
+        s.key !== "employee_agreement"
+      ) {
+        return false;
+      }
       return true;
     });
   }, [form, audience, templateKey]);
@@ -338,7 +346,12 @@ export function FormCustomizerPage() {
   function save() {
     updateFormMeta(currentForm.id, {
       name: formName.trim() || currentForm.name,
-      audience: lockedAudience ? "client" : audience,
+      audience:
+        templateKey === "employee_agreement"
+          ? "staff"
+          : lockedAudience
+            ? "client"
+            : audience,
       showInCalendarDescription: lockedAudience
         ? false
         : showInCalendarDescription,
@@ -560,6 +573,24 @@ export function FormCustomizerPage() {
                       </div>
                       <p className="text-xs text-karsa-faint">
                         Audience is locked to <strong>Client use</strong>.
+                      </p>
+                    </>
+                  ) : templateKey === "employee_agreement" ? (
+                    <>
+                      <div className="rounded-md border border-karsa-accent/40 bg-karsa-accent-soft/40 px-3 py-2.5 text-xs leading-relaxed text-karsa-text">
+                        <p className="font-medium text-karsa-accent-strong">
+                          Employee agreement (staff only)
+                        </p>
+                        <p className="mt-1.5 text-karsa-muted">
+                          For employees to sign on hire. Personal information
+                          matches a custom form, plus an optional Social
+                          Security number and the Employee agreement policy from
+                          Settings → Business.
+                        </p>
+                      </div>
+                      <p className="text-xs text-karsa-faint">
+                        Audience is locked to{" "}
+                        <strong>Employee / internal</strong>.
                       </p>
                     </>
                   ) : templateKey === "waitlist" ? (
@@ -817,6 +848,15 @@ export function FormCustomizerPage() {
                               checkbox.
                             </p>
                           ) : null}
+                          {section.key === "employee_agreement" ? (
+                            <p className="mt-0.5 text-xs text-karsa-faint">
+                              Wording from{" "}
+                              <PageLink to="/dashboard/settings">
+                                Settings → Business
+                              </PageLink>
+                              . Shows the policy + a sign-by checkbox.
+                            </p>
+                          ) : null}
                           {section.key === "privacy_policy" ||
                           section.key === "cancellation_policy" ? (
                             <p className="mt-0.5 text-xs text-karsa-faint">
@@ -941,6 +981,35 @@ export function FormCustomizerPage() {
                     </li>
                   );
                 })}
+                {customFields.map((field) => {
+                  const on = field.enabled !== false;
+                  return (
+                    <li
+                      key={field.id}
+                      className="rounded-md border border-karsa-border-subtle px-3 py-2.5"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm text-karsa-text">
+                            {field.label}
+                          </p>
+                          <button
+                            type="button"
+                            className="mt-0.5 text-xs text-karsa-danger hover:underline"
+                            onClick={() => removeField(field.id)}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                        <KarsaToggleSwitch
+                          checked={on}
+                          onChange={(next) => toggleField(field.id, next)}
+                          ariaLabel={field.label}
+                        />
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
 
               {(["health_information", "session"] as const).map(
@@ -1026,71 +1095,27 @@ export function FormCustomizerPage() {
                   );
                 },
               )}
-            </section>
-
-            <form
-              onSubmit={addCustomField}
-              className="space-y-3 border border-karsa-border-subtle p-4"
-            >
-              <h2 className="text-sm font-medium text-karsa-text">
-                Add custom field
-              </h2>
-              <div>
-                <label className="text-xs text-karsa-faint">Field label</label>
-                <input
-                  value={newFieldLabel}
-                  onChange={(e) => setNewFieldLabel(e.target.value)}
-                  required
-                  className={inputClass}
-                />
-              </div>
-              <button type="submit" className={btnSecondary}>
-                Add field
-              </button>
-            </form>
-
-            {customFields.length > 0 ? (
-              <section className="border border-karsa-border-subtle p-4">
+              <form
+                onSubmit={addCustomField}
+                className="mt-4 space-y-3 border-t border-karsa-border-subtle pt-4"
+              >
                 <h2 className="text-sm font-medium text-karsa-text">
-                  Custom fields
+                  Add custom field
                 </h2>
-                <p className="mt-1 text-xs text-karsa-faint">
-                  Each field has its own on/off switch — there is no blanket
-                  custom fields toggle.
-                </p>
-                <ul className="mt-3 space-y-2">
-                  {customFields.map((field) => {
-                    const on = field.enabled !== false;
-                    return (
-                      <li
-                        key={field.id}
-                        className="rounded-md border border-karsa-border-subtle px-3 py-2.5"
-                      >
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="text-sm text-karsa-text">
-                              {field.label}
-                            </p>
-                            <button
-                              type="button"
-                              className="mt-0.5 text-xs text-karsa-danger hover:underline"
-                              onClick={() => removeField(field.id)}
-                            >
-                              Remove
-                            </button>
-                          </div>
-                          <KarsaToggleSwitch
-                            checked={on}
-                            onChange={(next) => toggleField(field.id, next)}
-                            ariaLabel={field.label}
-                          />
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </section>
-            ) : null}
+                <div>
+                  <label className="text-xs text-karsa-faint">Field label</label>
+                  <input
+                    value={newFieldLabel}
+                    onChange={(e) => setNewFieldLabel(e.target.value)}
+                    required
+                    className={inputClass}
+                  />
+                </div>
+                <button type="submit" className={btnSecondary}>
+                  Add field
+                </button>
+              </form>
+            </section>
 
             <div className="border border-karsa-border-subtle p-4">
               <button

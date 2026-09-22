@@ -17,6 +17,17 @@ const DEFAULT_PRIVACY =
 const DEFAULT_CANCELLATION =
   "Cancellation policy (template)\n\nPlease cancel or reschedule at least 24 hours before your appointment. Late cancellations or missed appointments may be subject to a fee at the business’s discretion.\n\nContact the business as soon as possible if you need to change your appointment.\n\nThis is a general template provided by Karsaro. Customize it for your practice.";
 
+const DEFAULT_EMPLOYEE_AGREEMENT =
+  "Employee agreement (template)\n\nBy signing below, I acknowledge that I am joining this business as an employee or contractor and agree to follow its workplace policies, professional standards, and confidentiality requirements.\n\nI confirm that the personal information I provide on this form is accurate. I understand that this agreement may be updated by the business and that I should ask an administrator if I have questions before signing.\n\nThis is a general template provided by Karsaro. Customize it for your practice and local employment requirements.";
+
+function formatSsnInput(value: string): string {
+  const d = value.replace(/\D/g, "").slice(0, 9);
+  if (d.length === 0) return "";
+  if (d.length < 4) return d;
+  if (d.length < 6) return `${d.slice(0, 3)}-${d.slice(3)}`;
+  return `${d.slice(0, 3)}-${d.slice(3, 5)}-${d.slice(5)}`;
+}
+
 const SAMPLE_SLOTS = [
   { value: "slot-1000", label: "10:00 AM" },
   { value: "slot-1130", label: "11:30 AM" },
@@ -84,6 +95,23 @@ function FieldInput({
     );
   }
 
+  if (lower.includes("social security") || lower === "ssn") {
+    return (
+      <div className="form-group">
+        <label className={labelClass}>{label}</label>
+        <input
+          type="text"
+          inputMode="numeric"
+          autoComplete="off"
+          value={value}
+          onChange={(e) => onChange(formatSsnInput(e.target.value))}
+          placeholder="###-##-####"
+          className={inputClass}
+        />
+      </div>
+    );
+  }
+
   if (asTextarea) {
     return (
       <div className="form-group">
@@ -130,7 +158,7 @@ function ContactBlock({
 }) {
   return (
     <>
-      <div className="form-row grid gap-4 sm:grid-cols-2">
+      <div className="form-row grid items-end gap-4 sm:grid-cols-2">
         <div className="form-group">
           <label className={labelClass}>First Name</label>
           <input
@@ -227,7 +255,7 @@ function SchedulingBlock({
         />
       </div>
       {includeDateTime ? (
-        <div className="form-row grid gap-4 sm:grid-cols-2">
+        <div className="form-row grid items-end gap-4 sm:grid-cols-2">
           <div className="form-group">
             <label className={labelClass}>Date</label>
             <DateInput
@@ -337,7 +365,7 @@ export function TemplateFormPreview({
             <fieldset className="mt-6 rounded-lg border border-stone-200 bg-white/60 p-4">
               <legend className={legendClass}>Contact information</legend>
               {isSectionEnabled("name", form) ? (
-                <div className="form-row grid gap-4 sm:grid-cols-2">
+                <div className="form-row grid items-end gap-4 sm:grid-cols-2">
                   {renderFields("name")}
                 </div>
               ) : null}
@@ -435,6 +463,28 @@ export function TemplateFormPreview({
                   <input
                     value={values.address ?? ""}
                     onChange={(e) => set("address", e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
+              )}
+            </fieldset>
+          ) : null}
+
+          {isSectionEnabled("ssn", form) ? (
+            <fieldset className="mt-6 rounded-lg border border-stone-200 bg-white/60 p-4">
+              <legend className={legendClass}>Social Security number</legend>
+              {fieldsForSection("ssn", form).length > 0 ? (
+                renderFields("ssn")
+              ) : (
+                <div className="form-group">
+                  <label className={labelClass}>Social Security number</label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    value={values.ssn ?? ""}
+                    onChange={(e) => set("ssn", formatSsnInput(e.target.value))}
+                    placeholder="###-##-####"
                     className={inputClass}
                   />
                 </div>
@@ -635,6 +685,32 @@ export function TemplateFormPreview({
               <div className="terms-box max-h-56 overflow-y-auto rounded border border-stone-200 bg-stone-50 p-4 text-sm whitespace-pre-wrap text-stone-900">
                 {DEFAULT_CANCELLATION}
               </div>
+            </fieldset>
+          ) : null}
+
+          {isSectionEnabled("employee_agreement", form) ? (
+            <fieldset className="mt-6 rounded-lg border border-stone-200 bg-white/60 p-4">
+              <legend className={legendClass}>Employee agreement</legend>
+              <div className="terms-box max-h-56 overflow-y-auto rounded border border-stone-200 bg-stone-50 p-4 text-sm whitespace-pre-wrap text-stone-900">
+                {DEFAULT_EMPLOYEE_AGREEMENT}
+              </div>
+              <label className="mt-4 flex items-start gap-3 text-sm text-stone-900">
+                <input
+                  type="checkbox"
+                  checked={values.employee_agreement_agree === "true"}
+                  onChange={(e) =>
+                    set(
+                      "employee_agreement_agree",
+                      e.target.checked ? "true" : "false",
+                    )
+                  }
+                  className="mt-1 size-4 rounded border-stone-300"
+                />
+                <span>
+                  <strong>I have read and agree</strong> to the employee
+                  agreement.
+                </span>
+              </label>
             </fieldset>
           ) : null}
 

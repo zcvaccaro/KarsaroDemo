@@ -64,7 +64,7 @@ function LocationFields({
         Sample location — name and address are live-app only. Hours below save
         in this browser.
       </p>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid items-end gap-3 sm:grid-cols-2">
         <div className="sm:col-span-2">
           <label className={labelClass}>Name</label>
           <input
@@ -287,7 +287,7 @@ export function LocationsPage() {
         addLabel="Add location"
         disabled
         list={
-          <div className="grid gap-6 sm:grid-cols-2">
+          <div className="grid gap-6 lg:grid-cols-2">
             {sorted.length === 0 ? (
               <p className="col-span-full text-center text-sm text-karsa-faint">
                 No locations yet.
@@ -298,7 +298,7 @@ export function LocationsPage() {
                   key={location.id}
                   className={`border border-karsa-border-subtle p-4 ${
                     sorted.length % 2 === 1 && index === sorted.length - 1
-                      ? "sm:col-span-2"
+                      ? "lg:col-span-2"
                       : ""
                   }`}
                 >

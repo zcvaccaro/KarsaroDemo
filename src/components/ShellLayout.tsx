@@ -32,7 +32,7 @@ function DemoSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const groups = demoNavForRole(role);
 
   return (
-    <aside className="flex h-full w-64 shrink-0 flex-col border-r border-karsa-border bg-karsa-bg-elevated">
+    <aside className="flex h-full w-full shrink-0 flex-col border-r border-karsa-border bg-karsa-bg-elevated md:w-64">
       <div className="border-b border-karsa-border-subtle px-4 py-4">
         <Link
           to="/dashboard"

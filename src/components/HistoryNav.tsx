@@ -48,18 +48,22 @@ export function HistoryNav() {
         <button
           type="button"
           onClick={() => navigate(-1)}
-          className={navBtnClass}
+          className={`${navBtnClass} flex flex-col items-center gap-0.5 leading-tight md:flex-row md:gap-1`}
           aria-label="Go back"
         >
-          ← Back
+          <span>Back</span>
+          <span aria-hidden className="md:order-first">
+            ←
+          </span>
         </button>
         <button
           type="button"
           onClick={() => navigate(1)}
-          className={navBtnClass}
+          className={`${navBtnClass} flex flex-col items-center gap-0.5 leading-tight md:flex-row md:gap-1`}
           aria-label="Go forward"
         >
-          Forward →
+          <span>Forward</span>
+          <span aria-hidden>→</span>
         </button>
       </div>
 
