@@ -99,7 +99,7 @@ export function BillingPlans({
         <div className="grid gap-6 sm:grid-cols-2">
           <CountStepper
             label="Bookable practitioners"
-            hint={`Admins and receptionists who are not bookable do not count. Extra seats are ${formatUsd(EXTRA_PRACTITIONER_USD)} on Solo and Studio. Studio caps at 10.`}
+            hint={`Admins and receptionists who are not bookable do not count. Extra seats are ${formatUsd(EXTRA_PRACTITIONER_USD)}. Studio caps at 10. Practice includes 15, then charges extras.`}
             value={bookableCount}
             min={1}
             max={40}
@@ -262,7 +262,7 @@ function PlanCard({
         className="mt-4 cursor-not-allowed rounded-md border border-karsa-border px-3 py-2 text-xs text-karsa-faint"
         title="Checkout coming soon"
       >
-        {current ? "Selected" : "Coming soon"}
+        {current ? "Selected" : "Upgrade this plan"}
       </button>
     </li>
   );

@@ -237,10 +237,19 @@ function LocationFields({
 function DisabledCreateLocationForm() {
   return (
     <div className="space-y-4 border border-karsa-border-subtle p-4 opacity-80">
-      <h2 className="text-sm font-medium text-karsa-text">Add location</h2>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-sm font-medium text-karsa-text">Add location</h2>
+        <button
+          type="button"
+          disabled
+          className="rounded-md bg-karsa-accent px-3 py-2 text-sm font-medium text-karsa-bg opacity-60"
+        >
+          Create
+        </button>
+      </div>
       <LocationFields />
       <p className="text-xs text-karsa-faint">
-        Sample location — editing is live-app only
+        Sample location — creating extras and upgrade confirms are live-app only
       </p>
       <button
         type="button"
@@ -306,6 +315,29 @@ export function LocationsPage() {
                     </span>
                   </div>
                   <LocationFields location={location} hoursEditable />
+                  <div className="mt-3 flex items-center gap-2">
+                    <button
+                      type="button"
+                      disabled
+                      className="rounded-md bg-karsa-accent px-3 py-1.5 text-sm font-medium text-karsa-bg opacity-60"
+                    >
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      disabled
+                      className="rounded-md border border-karsa-border px-3 py-1.5 text-sm text-karsa-muted opacity-60"
+                    >
+                      {location.active ? "Deactivate" : "Activate"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled
+                      className="ml-auto shrink-0 rounded-md border border-karsa-danger/40 px-3 py-1.5 text-sm text-karsa-danger opacity-60"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               ))
             )}

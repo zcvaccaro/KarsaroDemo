@@ -545,6 +545,23 @@ export function EmployeeProfilePage() {
               className="mt-1 w-full rounded-md border border-karsa-border bg-karsa-bg px-3 py-2 text-sm text-karsa-text"
             />
           </label>
+          <div className="sm:col-span-2">
+            <label className="text-xs text-karsa-faint">Email — login</label>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <input
+                readOnly
+                value={`${employee.name.toLowerCase().replace(/\s+/g, ".")}@demo-wellness.local`}
+                className="min-w-0 flex-1 rounded-md border border-karsa-border bg-karsa-bg px-3 py-2 text-sm text-karsa-text"
+              />
+              <button
+                type="button"
+                disabled
+                className="rounded-md border border-karsa-border px-3 py-2 text-sm text-karsa-muted opacity-70"
+              >
+                Change password
+              </button>
+            </div>
+          </div>
           <label className="text-xs text-karsa-faint">
             Role
             <RoleSelect
@@ -558,27 +575,44 @@ export function EmployeeProfilePage() {
               }}
               className="mt-1 w-full rounded-md border border-karsa-border bg-karsa-bg px-3 py-2 text-sm text-karsa-text outline-none ring-karsa-accent/40 focus:ring-2"
             />
-            {role === "admin" ? (
-              <div className="mt-2 flex items-center justify-between gap-3 rounded-md border border-karsa-border px-3 py-2">
-                <div className="min-w-0">
-                  <p className="text-xs font-medium text-karsa-text">
-                    Bookable practitioner
-                  </p>
-                  <p className="mt-0.5 text-[11px] leading-snug text-karsa-faint">
-                    Include this admin in Book Now and practitioner pickers.
-                  </p>
-                </div>
-                <KarsaToggleSwitch
-                  checked={bookable}
-                  onChange={(on) => {
-                    setBookable(on);
-                    setEmployeeRole(employee.id, "admin", on);
-                  }}
-                  ariaLabel="Bookable practitioner"
-                />
-              </div>
-            ) : null}
           </label>
+          {role === "admin" || role === "receptionist" ? (
+            <div className="flex items-center justify-between gap-3 rounded-md border border-karsa-border px-3 py-2">
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-karsa-text">
+                  Bookable practitioner
+                </p>
+                <p className="mt-0.5 text-[11px] leading-snug text-karsa-faint">
+                  Include this person in Book Now and practitioner pickers.
+                </p>
+              </div>
+              <KarsaToggleSwitch
+                checked={bookable}
+                onChange={(on) => {
+                  setBookable(on);
+                  setEmployeeRole(employee.id, role, on);
+                }}
+                ariaLabel="Bookable practitioner"
+              />
+            </div>
+          ) : (
+            <div className="flex items-center justify-between gap-3 rounded-md border border-karsa-border px-3 py-2">
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-karsa-text">
+                  Bookable practitioner
+                </p>
+                <p className="mt-0.5 text-[11px] leading-snug text-karsa-faint">
+                  Practitioners are always bookable.
+                </p>
+              </div>
+              <KarsaToggleSwitch
+                checked
+                disabled
+                onChange={() => undefined}
+                ariaLabel="Bookable practitioner"
+              />
+            </div>
+          )}
         </div>
       </section>
 

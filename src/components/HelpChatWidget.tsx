@@ -2,7 +2,7 @@ import { useState } from "react";
 import { KarsaroMark } from "./Logo";
 
 const PLACEHOLDER =
-  "This helper answers questions about how Karsaro works. It does not see live appointments, clients, or payments. In the full product you can ask about the calendar, breaks, Book Now, waitlist, clients, employees, roles, forms, importing a CSV, and more.";
+  "This helper answers questions about how Karsaro works. It does not see live appointments, clients, or payments. In the full product you can ask about calendar arrived/no-show, overlap limits, Change password on an employee profile, upgrading seats and locations on Billing (Practice includes 15 people then +$12 each), inactive extra locations, roles, forms, and importing a CSV.";
 
 export function HelpChatWidget() {
   const [open, setOpen] = useState(false);

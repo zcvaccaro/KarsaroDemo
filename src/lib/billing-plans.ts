@@ -25,7 +25,7 @@ export const BILLING_PLANS: BillingPlan[] = [
   {
     id: "solo",
     name: "Solo",
-    monthlyUsd: 34,
+    monthlyUsd: 39,
     includedPractitioners: 1,
     maxPractitioners: 5,
     includedLocations: 1,
@@ -34,11 +34,11 @@ export const BILLING_PLANS: BillingPlan[] = [
     googleDrive: false,
     sms: false,
     blurb:
-      "One location, up to 5 bookable practitioners (1 included, +$12 each). Calendar sync; email reminders only.",
+      "One active location, up to 5 bookable practitioners (1 included, +$12 each). Calendar sync; email reminders only.",
     features: [
       "1 bookable practitioner included",
       "+$12 per extra bookable practitioner (max 5)",
-      "1 location (cannot add more)",
+      "1 active location (save extras as inactive)",
       "Unlimited appointments",
       "In-person Stripe payments (card, card on file, reader)",
       "Forms, waitlist, and email reminders",
@@ -70,8 +70,8 @@ export const BILLING_PLANS: BillingPlan[] = [
   {
     id: "practice",
     name: "Practice",
-    monthlyUsd: 104,
-    includedPractitioners: null,
+    monthlyUsd: 109,
+    includedPractitioners: 15,
     maxPractitioners: null,
     includedLocations: 1,
     maxLocations: null,
@@ -79,10 +79,11 @@ export const BILLING_PLANS: BillingPlan[] = [
     googleDrive: true,
     sms: true,
     blurb:
-      "Unlimited bookable people. Extra locations $69 each. Calendar, SMS, and Drive.",
+      "15 bookable people included, then +$12 each. Extra active locations $69 each. Calendar, SMS, and Drive.",
     features: [
-      "Unlimited bookable practitioners",
-      "1 location included · extra locations +$69",
+      "15 bookable practitioners included",
+      "+$12 per extra bookable practitioner",
+      "1 active location included · extra active locations +$69",
       "Everything in Studio",
       "Google Drive sync",
       "SMS reminders",
