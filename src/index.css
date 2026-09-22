@@ -312,3 +312,14 @@ body[data-karsaro-spotlight="import"] .karsaro-onboarding-import-target {
   outline-offset: 4px;
   box-shadow: 0 0 0 6px var(--karsa-accent-soft);
 }
+
+.karsa-page-wash {
+  background-color: var(--karsa-bg-elevated);
+  background-image:
+    radial-gradient(
+      ellipse at top left,
+      var(--karsa-accent-soft),
+      transparent 55%
+    ),
+    linear-gradient(180deg, var(--karsa-bg-elevated) 0%, var(--karsa-bg) 100%);
+}

@@ -134,7 +134,7 @@ export function OverviewPage() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <header className="relative overflow-hidden rounded-2xl border border-karsa-border-subtle bg-[radial-gradient(ellipse_at_top_left,_rgba(154,175,157,0.12),_transparent_55%),linear-gradient(180deg,_#1a1d26_0%,_#12141a_100%)] px-6 py-7 md:px-10 md:py-9">
+      <header className="karsa-page-wash relative overflow-hidden rounded-2xl border border-karsa-border-subtle px-6 py-7 md:px-10 md:py-9">
         <p className="text-xs font-medium tracking-[0.18em] text-karsa-faint uppercase">
           Dashboard · trial
         </p>
