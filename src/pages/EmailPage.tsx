@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { SaveButton } from "../components/SaveButton";
 import { EmailMessageEditor } from "../components/EmailMessageEditor";
 import { PageLink } from "../components/PageLink";
 import { KarsaToggleField } from "../components/karsa-toggle-switch";
@@ -45,10 +46,13 @@ function TemplateEditor({
   const [htmlContent, setHtmlContent] = useState(template.htmlContent);
   const [active, setActive] = useState(template.active);
   const [message, setMessage] = useState<string | null>(null);
+  const [dirty, setDirty] = useState(false);
 
   return (
     <form
       className="space-y-4 border border-karsa-border-subtle p-4"
+      onInput={() => setDirty(true)}
+      onChange={() => setDirty(true)}
       onSubmit={(e) => {
         e.preventDefault();
         upsertEmailTemplate({
@@ -59,6 +63,7 @@ function TemplateEditor({
           htmlContent,
           active,
         });
+        setDirty(false);
         setMessage("Template saved.");
       }}
     >
@@ -86,12 +91,11 @@ function TemplateEditor({
       {message ? (
         <p className="text-sm text-karsa-accent-strong">{message}</p>
       ) : null}
-      <button
-        type="submit"
-        className="rounded-md bg-karsa-accent px-3 py-2 text-sm font-medium text-karsa-bg"
-      >
-        Save template
-      </button>
+      <SaveButton
+        dirty={dirty}
+        saveLabel="Save template"
+        className="rounded-md bg-karsa-accent px-3 py-2 text-sm font-medium text-karsa-bg disabled:opacity-60"
+      />
     </form>
   );
 }

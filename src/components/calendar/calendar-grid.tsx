@@ -1,5 +1,8 @@
 import {
   useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
   type CSSProperties,
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
@@ -44,11 +47,43 @@ export type CreateMenuState = {
   time: string;
 };
 
+export type GridPointerLike = {
+  currentTarget: EventTarget & HTMLElement;
+  clientX: number;
+  clientY: number;
+  target: EventTarget;
+};
+
 export type DayColumnGridHandlers = {
   onGridMouseMove?: (e: ReactMouseEvent<HTMLDivElement>) => void;
   onGridMouseLeave?: () => void;
-  onGridClick?: (e: ReactMouseEvent<HTMLDivElement>) => void;
+  onGridClick?: (e: GridPointerLike) => void;
 };
+
+function appointmentBufferPct(appt: CalendarAppointment): number {
+  const serviceMin = Math.max(
+    1,
+    (new Date(appt.endIso).getTime() - new Date(appt.startIso).getTime()) /
+      60_000,
+  );
+  const buffer = Math.max(0, appt.bufferMinutes ?? 0);
+  if (buffer <= 0) return 0;
+  return (buffer / (serviceMin + buffer)) * 100;
+}
+
+function BufferOverlay({ percent }: { percent: number }) {
+  if (percent <= 0) return null;
+  return (
+    <div
+      className="pointer-events-none absolute inset-x-0 bottom-0 z-[4]"
+      style={{
+        height: `${percent}%`,
+        background: "rgba(60, 64, 72, 0.32)",
+      }}
+      aria-hidden
+    />
+  );
+}
 
 export function formatTime(iso: string) {
   return formatTime12(new Date(iso));
@@ -87,6 +122,7 @@ export function AppointmentBlock({
   onOpen?: (appt: CalendarAppointment) => void;
 }) {
   const color = getServiceColor(appt.colorId);
+  const bufferPct = appointmentBufferPct(appt);
 
   return (
     <div
@@ -126,7 +162,8 @@ export function AppointmentBlock({
             aria-hidden
           />
           <div
-            className="absolute inset-x-0 bottom-0 z-20 h-2 cursor-ns-resize"
+            className="absolute inset-x-0 z-20 h-2 cursor-ns-resize"
+            style={{ bottom: bufferPct > 0 ? `${bufferPct}%` : 0 }}
             onPointerDown={(e) => {
               e.stopPropagation();
               onResizePointerDown("end", e);
@@ -164,6 +201,7 @@ export function AppointmentBlock({
           {appt.locationName ? ` · ${appt.locationName}` : ""}
         </p>
       )}
+      <BufferOverlay percent={bufferPct} />
     </div>
   );
 }
@@ -262,6 +300,10 @@ export function DayColumn({
           className="absolute inset-0 z-[1]"
           onMouseMove={gridHandlers.onGridMouseMove}
           onMouseLeave={gridHandlers.onGridMouseLeave}
+          onPointerUp={(e) => {
+            if (e.pointerType !== "touch") return;
+            gridHandlers.onGridClick?.(e);
+          }}
           onClick={gridHandlers.onGridClick}
           role="presentation"
         />
@@ -340,6 +382,7 @@ export function DragGhost({
   drag,
   hourPx,
   columnCount,
+  dense,
   bounds,
 }: {
   drag: DragState;
@@ -349,9 +392,15 @@ export function DragGhost({
   bounds: CalendarGridBounds;
 }) {
   const topPx = (drag.topMin / 60) * hourPx;
-  const height = Math.max((drag.durationMin / 60) * hourPx, 22);
+  const buffer = Math.max(0, drag.appt.bufferMinutes ?? 0);
+  const height = Math.max(
+    ((drag.durationMin + buffer) / 60) * hourPx,
+    dense ? 22 : 36,
+  );
   const colWidthPct = 100 / columnCount;
   const color = getServiceColor(drag.appt.colorId);
+  const bufferPct =
+    buffer > 0 ? (buffer / (drag.durationMin + buffer)) * 100 : 0;
 
   return (
     <div
@@ -365,10 +414,11 @@ export function DragGhost({
         borderColor: color.border,
       }}
     >
-      <p className="truncate text-[10px] font-medium text-karsa-text">
+      <p className="relative z-[6] truncate text-[10px] font-medium text-karsa-text">
         {formatDisplayTimeFromMinutes(bounds.startHour * 60 + drag.topMin)} ·{" "}
         {drag.appt.clientName}
       </p>
+      <BufferOverlay percent={bufferPct} />
     </div>
   );
 }
@@ -384,6 +434,10 @@ export function CreateMenuPopup({
   onBook: () => void;
   onBreak: () => void;
 }) {
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const armedRef = useRef(false);
+
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
@@ -392,12 +446,56 @@ export function CreateMenuPopup({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  useEffect(() => {
+    armedRef.current = false;
+    const id = window.setTimeout(() => {
+      armedRef.current = true;
+    }, 0);
+    return () => window.clearTimeout(id);
+  }, [menu.x, menu.y]);
+
+  useLayoutEffect(() => {
+    function clamp() {
+      const el = menuRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const pad = 8;
+      let dx = 0;
+      let dy = 0;
+      if (rect.right > window.innerWidth - pad) {
+        dx -= rect.right - (window.innerWidth - pad);
+      }
+      if (rect.bottom > window.innerHeight - pad) {
+        dy -= rect.bottom - (window.innerHeight - pad);
+      }
+      if (rect.left + dx < pad) dx += pad - (rect.left + dx);
+      if (rect.top + dy < pad) dy += pad - (rect.top + dy);
+      setOffset({ x: dx, y: dy });
+    }
+    clamp();
+    window.addEventListener("resize", clamp);
+    window.addEventListener("scroll", clamp, true);
+    return () => {
+      window.removeEventListener("resize", clamp);
+      window.removeEventListener("scroll", clamp, true);
+    };
+  }, [menu.x, menu.y]);
+
+  function closeIfArmed() {
+    if (armedRef.current) onClose();
+  }
+
   return (
     <>
-      <div className="fixed inset-0 z-40" onClick={onClose} role="presentation" />
       <div
-        className="fixed z-50 min-w-[11rem] overflow-hidden rounded-md border border-karsa-border bg-karsa-bg py-1 shadow-lg"
-        style={{ left: menu.x, top: menu.y }}
+        className="fixed inset-0 z-40"
+        onPointerDown={closeIfArmed}
+        role="presentation"
+      />
+      <div
+        ref={menuRef}
+        className="absolute z-50 min-w-[11rem] overflow-hidden rounded-md border border-karsa-border bg-karsa-bg py-1 shadow-lg"
+        style={{ left: menu.x + offset.x, top: menu.y + offset.y }}
         role="menu"
       >
         <button

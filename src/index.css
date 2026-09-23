@@ -159,6 +159,17 @@ input[type="radio"] {
   accent-color: var(--karsa-accent);
 }
 
+/* Form previews stay cream paper even in dashboard dark mode */
+.public-form-shell {
+  color-scheme: light;
+}
+
+.public-form-shell input[type="checkbox"],
+.public-form-shell input[type="radio"] {
+  color-scheme: light;
+  accent-color: #6f8673;
+}
+
 button:disabled,
 input:disabled,
 select:disabled,

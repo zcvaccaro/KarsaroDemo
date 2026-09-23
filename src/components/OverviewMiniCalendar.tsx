@@ -1,5 +1,6 @@
-import { useState, type TransitionEvent } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState, type KeyboardEvent, type TransitionEvent } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useEntityModals } from "./EntityModals";
 import {
   addDays,
   appointmentsForDay,
@@ -18,19 +19,117 @@ type Props = {
   appointments: MiniCalAppointment[];
 };
 
+const MAX_SLOTS = 4;
+
 function weekDays(weekStart: Date) {
   return Array.from({ length: 7 }, (_, offset) => addDays(weekStart, offset));
 }
 
 function rangeLabelFor(days: Date[]) {
-  return `${days[0]!.toLocaleDateString(undefined, {
+  return `${days[0]!.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
-  })} – ${days[6]!.toLocaleDateString(undefined, {
+  })} – ${days[6]!.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
   })}`;
+}
+
+function MiniDayCell({
+  day,
+  appointments,
+}: {
+  day: Date;
+  appointments: MiniCalAppointment[];
+}) {
+  const navigate = useNavigate();
+  const { openAppointment } = useEntityModals();
+  const ymd = formatYmd(day);
+  const dayAppts = appointmentsForDay(appointments, day);
+  const [today, setToday] = useState(false);
+  useEffect(() => {
+    setToday(isToday(day));
+  }, [day]);
+  const weekday = day.toLocaleDateString("en-US", { weekday: "short" });
+  const overflow = dayAppts.length > MAX_SLOTS;
+  const visible = overflow ? dayAppts.slice(0, MAX_SLOTS - 1) : dayAppts;
+  const moreCount = overflow ? dayAppts.length - visible.length : 0;
+
+  function goDay() {
+    navigate(`/dashboard/calendar?view=day&date=${ymd}`);
+  }
+
+  function onKey(e: KeyboardEvent<HTMLDivElement>) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      goDay();
+    }
+  }
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={goDay}
+      onKeyDown={onKey}
+      className={`flex min-h-[12rem] flex-col rounded-lg border px-1 py-2 transition-colors hover:border-karsa-accent/50 hover:bg-karsa-surface-hover ${
+        today
+          ? "border-karsa-accent/40 bg-karsa-accent-soft/30"
+          : "border-karsa-border-subtle bg-karsa-surface/40"
+      }`}
+    >
+      <div className="px-0.5 text-center">
+        <p className="text-[10px] tracking-wide text-karsa-faint uppercase">
+          {weekday}
+        </p>
+        <p
+          className={`mt-0.5 text-sm font-medium ${
+            today ? "text-karsa-accent-strong" : "text-karsa-text"
+          }`}
+        >
+          {day.getDate()}
+        </p>
+      </div>
+      <ul className="mt-2 flex-1 space-y-1 overflow-hidden">
+        {visible.map((appt) => {
+          const time = formatTime12(new Date(appt.startIso));
+          return (
+            <li key={appt.id}>
+              <button
+                type="button"
+                className="w-full truncate rounded bg-karsa-bg-elevated px-1 py-0.5 text-left text-[10px] leading-tight text-karsa-muted hover:text-karsa-accent-strong"
+                title={`${time} · ${appt.clientName}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openAppointment(appt.id);
+                }}
+              >
+                <span className="text-karsa-faint">{time}</span> {appt.clientName}
+              </button>
+            </li>
+          );
+        })}
+        {moreCount > 0 ? (
+          <li>
+            <button
+              type="button"
+              className="w-full px-1 text-left text-[10px] text-karsa-faint hover:text-karsa-accent-strong"
+              onClick={(e) => {
+                e.stopPropagation();
+                goDay();
+              }}
+            >
+              +{moreCount}
+            </button>
+          </li>
+        ) : null}
+        {dayAppts.length === 0 ? (
+          <li className="px-1 text-[10px] text-karsa-faint/70">—</li>
+        ) : null}
+      </ul>
+    </div>
+  );
 }
 
 export function OverviewMiniCalendar({
@@ -50,7 +149,7 @@ export function OverviewMiniCalendar({
     addDays(weekStart, 7),
   ];
   const days = weekDays(visibleStart);
-  const monthLabel = days[0]!.toLocaleString(undefined, {
+  const monthLabel = days[0]!.toLocaleString("en-US", {
     month: "short",
     year: "numeric",
   });
@@ -136,63 +235,13 @@ export function OverviewMiniCalendar({
               key={formatYmd(panelStart)}
               className="grid h-full w-full shrink-0 basis-full grid-cols-7 gap-1"
             >
-              {weekDays(panelStart).map((day) => {
-                const ymd = formatYmd(day);
-                const dayAppts = appointmentsForDay(appointments, day);
-                const today = isToday(day);
-                const weekday = day.toLocaleDateString(undefined, {
-                  weekday: "short",
-                });
-                return (
-                  <Link
-                    key={ymd}
-                    to={`/dashboard/calendar?view=day&date=${ymd}`}
-                    className={`flex min-h-[12rem] flex-col rounded-lg border px-1 py-2 transition-colors hover:border-karsa-accent/50 hover:bg-karsa-surface-hover ${
-                      today
-                        ? "border-karsa-accent/40 bg-karsa-accent-soft/30"
-                        : "border-karsa-border-subtle bg-karsa-surface/40"
-                    }`}
-                  >
-                    <div className="px-0.5 text-center">
-                      <p className="text-[10px] tracking-wide text-karsa-faint uppercase">
-                        {weekday}
-                      </p>
-                      <p
-                        className={`mt-0.5 text-sm font-medium ${
-                          today ? "text-karsa-accent-strong" : "text-karsa-text"
-                        }`}
-                      >
-                        {day.getDate()}
-                      </p>
-                    </div>
-                    <ul className="mt-2 flex-1 space-y-1 overflow-hidden">
-                      {dayAppts.slice(0, 4).map((appt) => {
-                        const time = formatTime12(new Date(appt.startIso));
-                        return (
-                          <li
-                            key={appt.id}
-                            className="truncate rounded bg-karsa-bg-elevated px-1 py-0.5 text-[10px] leading-tight text-karsa-muted"
-                            title={`${time} · ${appt.clientName}`}
-                          >
-                            <span className="text-karsa-faint">{time}</span>{" "}
-                            {appt.clientName}
-                          </li>
-                        );
-                      })}
-                      {dayAppts.length > 4 ? (
-                        <li className="px-1 text-[10px] text-karsa-faint">
-                          +{dayAppts.length - 4} more
-                        </li>
-                      ) : null}
-                      {dayAppts.length === 0 ? (
-                        <li className="px-1 text-[10px] text-karsa-faint/70">
-                          —
-                        </li>
-                      ) : null}
-                    </ul>
-                  </Link>
-                );
-              })}
+              {weekDays(panelStart).map((day) => (
+                <MiniDayCell
+                  key={formatYmd(day)}
+                  day={day}
+                  appointments={appointments}
+                />
+              ))}
             </div>
           ))}
         </div>

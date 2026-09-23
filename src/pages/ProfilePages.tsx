@@ -4,6 +4,7 @@ import { CalendarBookModal } from "../components/calendar/CalendarBookModal";
 import { ConfirmationEditor } from "../components/ConfirmationEditor";
 import { EntityOpenButton, useEntityModals } from "../components/EntityModals";
 import { PageLink } from "../components/PageLink";
+import { SaveButton } from "../components/SaveButton";
 import { HmTimeSelect } from "../components/inputs/HmTimeSelect";
 import { KarsaToggleSwitch } from "../components/karsa-toggle-switch";
 import { RoleSelect } from "../components/RoleSelect";
@@ -118,7 +119,7 @@ export function ClientProfilePage() {
   const [phone, setPhone] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [notes, setNotes] = useState("");
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved] = useState(true);
 
   useEffect(() => {
     if (!client) return;
@@ -318,12 +319,11 @@ export function ClientProfilePage() {
           {saved ? (
             <p className="text-sm text-karsa-accent-strong">Client updated.</p>
           ) : null}
-          <button
-            type="submit"
-            className="rounded-md bg-karsa-accent px-4 py-2 text-sm font-medium text-karsa-bg"
-          >
-            Save changes
-          </button>
+          <SaveButton
+            dirty={!saved}
+            saveLabel="Save changes"
+            className="rounded-md bg-karsa-accent px-4 py-2 text-sm font-medium text-karsa-bg disabled:opacity-60"
+          />
         </form>
       </section>
 
@@ -496,8 +496,8 @@ export function EmployeeProfilePage() {
     employee?.role ?? "practitioner",
   );
   const [bookable, setBookable] = useState(employee?.bookable ?? true);
-  const [hoursSaved, setHoursSaved] = useState(false);
-  const [servicesSaved, setServicesSaved] = useState(false);
+  const [hoursSaved, setHoursSaved] = useState(true);
+  const [servicesSaved, setServicesSaved] = useState(true);
 
   useEffect(() => {
     if (!employee) return;
@@ -656,8 +656,9 @@ export function EmployeeProfilePage() {
       <section className="mt-8 border border-karsa-border-subtle p-4">
         <h2 className="text-sm font-medium text-karsa-text">Weekly hours</h2>
         <p className="mt-1 text-xs text-karsa-faint">
-          Practitioner hours for booking — independent of location open hours in
-          this demo.
+          These hours are when this person can take appointments — not their
+          full time on the clock. Independent of location open hours in this
+          demo.
         </p>
         <div className="mt-4 space-y-2">
           {availability.map((day) => (
@@ -709,16 +710,16 @@ export function EmployeeProfilePage() {
             Weekly hours saved.
           </p>
         ) : null}
-        <button
+        <SaveButton
           type="button"
-          className="mt-4 rounded-md bg-karsa-accent px-4 py-2 text-sm font-medium text-karsa-bg"
+          dirty={!hoursSaved}
+          saveLabel="Save weekly hours"
+          className="mt-4 rounded-md bg-karsa-accent px-4 py-2 text-sm font-medium text-karsa-bg disabled:opacity-60"
           onClick={() => {
             setEmployeeAvailability(employee.id, availability);
             setHoursSaved(true);
           }}
-        >
-          Save weekly hours
-        </button>
+        />
       </section>
 
       <section className="mt-8 border border-karsa-border-subtle p-4">
@@ -765,16 +766,16 @@ export function EmployeeProfilePage() {
             Services saved.
           </p>
         ) : null}
-        <button
+        <SaveButton
           type="button"
-          className="mt-4 rounded-md bg-karsa-accent px-4 py-2 text-sm font-medium text-karsa-bg"
+          dirty={!servicesSaved}
+          saveLabel="Save services"
+          className="mt-4 rounded-md bg-karsa-accent px-4 py-2 text-sm font-medium text-karsa-bg disabled:opacity-60"
           onClick={() => {
             setEmployeeServices(employee.id, serviceIds);
             setServicesSaved(true);
           }}
-        >
-          Save services
-        </button>
+        />
       </section>
 
       {importedFiles.filter((f) => f.employeeId === employee.id).length > 0 ? (

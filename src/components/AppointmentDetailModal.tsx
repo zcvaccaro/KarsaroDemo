@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { formatTime } from "./calendar/calendar-grid";
 import { DateInput } from "./inputs/DateInput";
 import { HmTimeSelect } from "./inputs/HmTimeSelect";
@@ -36,6 +37,7 @@ export function AppointmentDetailModal({
   const row = store.appointments.find((a) => a.id === appointmentId);
   const client = store.clients.find((c) => c.id === row?.clientId);
   const service = store.services.find((s) => s.id === row?.serviceId);
+  const practitioner = store.employees.find((e) => e.id === row?.employeeId);
 
   const [date, setDate] = useState(row?.date ?? "");
   const [time, setTime] = useState(minToHm(row?.startMin ?? 0));
@@ -212,7 +214,23 @@ export function AppointmentDetailModal({
             <div>
               <dt className="text-xs text-karsa-faint uppercase">Client</dt>
               <dd className="mt-1 text-karsa-text">
-                {client ? clientDisplayName(client) : "Client"}
+                {client ? (
+                  <Link
+                    to={`/dashboard/clients/${client.id}`}
+                    className="text-karsa-accent-strong underline-offset-4 hover:underline"
+                    onClick={() => onClose()}
+                  >
+                    {clientDisplayName(client)}
+                  </Link>
+                ) : (
+                  "Client"
+                )}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-karsa-faint uppercase">Practitioner</dt>
+              <dd className="mt-1 text-karsa-text">
+                {practitioner?.name ?? "Staff"}
               </dd>
             </div>
             <div>

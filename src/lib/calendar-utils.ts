@@ -179,6 +179,7 @@ export type CalendarAppointment = {
   serviceName: string;
   colorId?: string | null;
   locationName?: string | null;
+  bufferMinutes?: number | null;
 };
 
 export type CalendarLocationHour = {
@@ -414,9 +415,11 @@ export function layoutOverlappingAppointments(
     .map((appt) => {
       const start = new Date(appt.startIso);
       const end = new Date(appt.endIso);
+      const buffer = Math.max(0, appt.bufferMinutes ?? 0);
+      const visualEnd = new Date(end.getTime() + buffer * 60_000);
       const { start: topMin, end: endMin } = clampToGrid(
         minutesFromGridStart(start, bounds),
-        minutesFromGridStart(end, bounds),
+        minutesFromGridStart(visualEnd, bounds),
         bounds,
       );
       return { ...appt, topMin, endMin };

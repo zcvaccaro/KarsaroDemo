@@ -321,7 +321,7 @@ export function LocationsPage() {
                       disabled
                       className="rounded-md bg-karsa-accent px-3 py-1.5 text-sm font-medium text-karsa-bg opacity-60"
                     >
-                      Save
+                      Saved
                     </button>
                     <button
                       type="button"

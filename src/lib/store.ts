@@ -876,7 +876,7 @@ function buildCurrentMonthAppointments(
           clientId: client.id,
           serviceId: service.id,
           date: toYmd(date),
-          startMin: slots[si]!,
+          startMin: slots[si]! + ((day + si) % 4) * 15,
           durationMin: service.durationMin,
           status: statusForSeed(date, si, day),
         });

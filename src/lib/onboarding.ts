@@ -56,11 +56,16 @@ export const DEMO_ONBOARDING_STEPS: OnboardingStep[] = [
     href: "/dashboard/employees",
   },
   {
+    id: "clients",
+    title: "Clients",
+    body: "Open a client profile to see contact details, appointment history, and the forms attached to each visit.",
+    href: "/dashboard/clients",
+  },
+  {
     id: "import-clients",
     title: "Import clients",
-    body: "Moving from another booking product? The highlighted import client data link on this page walks you through exporting a CSV and mapping columns.",
-    href: "/dashboard/clients",
-    spotlight: "import",
+    body: "Moving from another booking product? Export a CSV and map columns here to bring clients into Karsaro.",
+    href: "/dashboard/clients/import",
   },
   {
     id: "forms",

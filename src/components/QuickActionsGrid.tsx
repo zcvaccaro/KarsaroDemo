@@ -393,13 +393,24 @@ function ActionIcon({ name }: { name: QuickActionIcon }) {
             strokeWidth="1.5"
             strokeLinecap="round"
           />
-          <path
-            d="M17 3v4h4M7 21v-4H3"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
+          <g transform="rotate(-90 17 7)">
+            <path
+              d="M17 3v4h4"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </g>
+          <g transform="rotate(-90 7 17)">
+            <path
+              d="M7 21v-4H3"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </g>
         </svg>
       );
     case "flow":

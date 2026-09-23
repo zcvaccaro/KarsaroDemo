@@ -1621,7 +1621,7 @@ export function IncomePage() {
     <PageChrome
       eyebrow="Insights"
       title="Income"
-      blurb="Collected includes tips. The Tips section below is what to pay out per employee for this filter."
+      blurb="Collected includes gratuity. The Gratuity section below is what to pay out per employee for this filter."
       maxWidth="max-w-6xl"
     >
       <div className="mb-6 grid gap-4 sm:grid-cols-2">
@@ -1662,11 +1662,11 @@ export function IncomePage() {
           <p className="mt-1 font-display text-3xl text-karsa-text">
             {money(collectedCents)}
           </p>
-          <p className="mt-1 text-xs text-karsa-faint">Includes tips</p>
+          <p className="mt-1 text-xs text-karsa-faint">Includes gratuity</p>
         </div>
         <div className="rounded-md border border-karsa-border-subtle px-4 py-3">
           <p className="text-xs tracking-wide text-karsa-faint uppercase">
-            Tips
+            Gratuity
           </p>
           <p className="mt-1 font-display text-3xl text-karsa-text">
             {money(tipCents)}
@@ -1685,15 +1685,15 @@ export function IncomePage() {
       <section className="rounded-md border border-karsa-border-subtle">
         <div className="border-b border-karsa-border-subtle px-4 py-3">
           <h2 className="text-sm font-medium text-karsa-text">
-            Tips by employee
+            Gratuity by employee
           </h2>
           <p className="mt-1 text-xs text-karsa-faint">
-            Tip portion of paid visits. Use this list to decide payouts.
+            Gratuity portion of paid visits. Use this list to decide payouts.
           </p>
         </div>
         {tipRows.length === 0 ? (
           <p className="px-4 py-6 text-sm text-karsa-faint">
-            No tips in this filter.
+            No gratuity in this filter.
           </p>
         ) : (
           <ul className="divide-y divide-karsa-border-subtle">
@@ -1707,8 +1707,10 @@ export function IncomePage() {
                     {row.label}
                   </p>
                   <p className="mt-0.5 text-xs text-karsa-faint">
-                    {row.visits} tipped payment
-                    {row.visits === 1 ? "" : "s"}
+                    {row.visits}{" "}
+                    {row.visits === 1
+                      ? "payment with gratuity"
+                      : "payments with gratuity"}
                   </p>
                 </div>
                 <p className="text-sm font-medium text-karsa-text">

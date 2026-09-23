@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { OverviewMiniCalendar } from "../components/OverviewMiniCalendar";
 import { QuickActionsGrid } from "../components/QuickActionsGrid";
 import { EntityOpenButton } from "../components/EntityModals";
@@ -145,39 +145,6 @@ export function OverviewPage() {
           Your home base for Sample Studio. See what&apos;s coming up this week,
           then jump into everyday tasks. Everything you change here stays in
           this browser only.
-        </p>
-
-        <p className="mt-4 rounded-md border border-karsa-accent/25 bg-karsa-bg/40 px-3 py-2.5 text-sm leading-relaxed text-karsa-text">
-          <span className="font-medium text-karsa-accent-strong">Start here:</span>{" "}
-          <Link
-            to="/dashboard/calendar"
-            className="text-karsa-accent-strong underline-offset-4 hover:underline"
-          >
-            Calendar
-          </Link>{" "}
-          to browse this month&apos;s bookings (click an empty time to add one).
-          Then open{" "}
-          <Link
-            to="/dashboard/forms"
-            className="text-karsa-accent-strong underline-offset-4 hover:underline"
-          >
-            Forms
-          </Link>{" "}
-          to customize what clients fill out, and{" "}
-          <Link
-            to="/dashboard/settings/booking-flow"
-            className="text-karsa-accent-strong underline-offset-4 hover:underline"
-          >
-            Booking flow
-          </Link>{" "}
-          to set the steps of{" "}
-          <Link
-            to="/dashboard/bookings/new"
-            className="text-karsa-accent-strong underline-offset-4 hover:underline"
-          >
-            Book Now
-          </Link>
-          .
         </p>
 
         <p className="mt-4 text-xs text-karsa-faint">

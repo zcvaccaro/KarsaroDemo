@@ -25,6 +25,7 @@ import {
   type CreateMenuState,
   type DragState,
   type GridHover,
+  type GridPointerLike,
 } from "../components/calendar/calendar-grid";
 import {
   CLOSED_HOURS_OVERLAY_CLASS,
@@ -183,7 +184,7 @@ function DayWaitlistDropdown({
                   }}
                 >
                   {item.clientName}
-                  {item.serviceName ? ` Â· ${item.serviceName}` : ""}
+                  {item.serviceName ? ` · ${item.serviceName}` : ""}
                 </button>
               </li>
             ))}
@@ -201,7 +202,7 @@ function DayWaitlistDropdown({
                   }}
                 >
                   {item.clientName}
-                  {item.serviceName ? ` Â· ${item.serviceName}` : ""}
+                  {item.serviceName ? ` · ${item.serviceName}` : ""}
                 </button>
               </li>
             ))}
@@ -229,8 +230,20 @@ function parseView(raw: string | null): CalendarView {
   return "week";
 }
 
+function menuPointInContainer(
+  e: { clientX: number; clientY: number },
+  container: HTMLElement | null,
+) {
+  if (!container) return { x: e.clientX, y: e.clientY };
+  const rect = container.getBoundingClientRect();
+  return {
+    x: e.clientX - rect.left + container.scrollLeft,
+    y: e.clientY - rect.top + container.scrollTop,
+  };
+}
+
 function gridClickInfo(
-  e: ReactMouseEvent<HTMLElement>,
+  e: GridPointerLike,
   day: Date,
   hourPx: number,
   bounds: CalendarGridBounds,
@@ -285,6 +298,7 @@ function toCalendarAppointments(
       locationName: showLocation
         ? locationNameForService(service, locations)
         : null,
+      bufferMinutes: service?.bufferMinutes ?? 0,
     };
   });
 }
@@ -378,7 +392,7 @@ function WeekView({
   );
 
   const openCreateMenu = useCallback(
-    (columnIndex: number, e: ReactMouseEvent<HTMLDivElement>) => {
+    (columnIndex: number, e: GridPointerLike) => {
       if (dragRef.current?.moved) return;
       if (Date.now() < ignoreClickUntil.current) return;
       if (isInteractiveTarget(e.target)) return;
@@ -393,9 +407,10 @@ function WeekView({
         return;
       }
       setHoursNotice(null);
+      const point = menuPointInContainer(e, gridRef.current);
       setCreateMenu({
-        x: e.clientX,
-        y: e.clientY,
+        x: point.x,
+        y: point.y,
         day,
         time: info.time,
       });
@@ -601,11 +616,14 @@ function WeekView({
                 </p>
                 {closed ? (
                   <p className="mt-0.5 text-[9px] text-karsa-text/80">Closed</p>
-                ) : null}
-                <DayWaitlistDropdown
-                  items={waitlistForDay(waitlist, day)}
-                  compact
-                />
+                ) : (
+                  <div className="mt-0.5 flex justify-center">
+                    <DayWaitlistDropdown
+                      items={waitlistForDay(waitlist, day)}
+                      compact
+                    />
+                  </div>
+                )}
               </div>
             );
           })}
@@ -676,12 +694,33 @@ function WeekView({
                 bounds={bounds}
               />
             ) : null}
+            {createMenu ? (
+              <CreateMenuPopup
+                menu={createMenu}
+                onClose={() => setCreateMenu(null)}
+                onBook={() => {
+                  onOpenBook({
+                    date: formatYmd(createMenu.day),
+                    time: createMenu.time,
+                    employeeId,
+                  });
+                }}
+                onBreak={() => {
+                  const pending = pendingBreakRef.current;
+                  window.alert(
+                    pending
+                      ? `In the live app this adds a staff break (${pending.start} – ${pending.end}).`
+                      : "In the live app this adds a staff break on the calendar.",
+                  );
+                }}
+              />
+            ) : null}
           </div>
         </div>
       </div>
       <p className="border-t border-karsa-border-subtle px-3 py-2 text-[11px] text-karsa-faint">
-        Showing {hourLabel(bounds.startHour)}â€“{hourLabel(bounds.endHour)}. Dark
-        orange marks closed hours â€” bookings must start in open hours.
+        Showing {hourLabel(bounds.startHour)}–{hourLabel(bounds.endHour)}. Dark
+        orange marks closed hours — bookings must start in open hours.
       </p>
       {hoursNotice ? (
         <p className="border-t border-karsa-border-subtle px-3 py-2 text-xs text-karsa-warning">
@@ -692,28 +731,6 @@ function WeekView({
         <p className="border-t border-karsa-border-subtle px-3 py-2 text-xs text-karsa-danger">
           {dragError}
         </p>
-      ) : null}
-
-      {createMenu ? (
-        <CreateMenuPopup
-          menu={createMenu}
-          onClose={() => setCreateMenu(null)}
-          onBook={() => {
-            onOpenBook({
-              date: formatYmd(createMenu.day),
-              time: createMenu.time,
-              employeeId,
-            });
-          }}
-          onBreak={() => {
-            const pending = pendingBreakRef.current;
-            window.alert(
-              pending
-                ? `In the live app this adds a staff break (${pending.start} â€“ ${pending.end}).`
-                : "In the live app this adds a staff break on the calendar.",
-            );
-          }}
-        />
       ) : null}
     </div>
   );
@@ -781,7 +798,7 @@ function DayView({
   );
 
   const openCreateMenu = useCallback(
-    (e: ReactMouseEvent<HTMLDivElement>) => {
+    (e: GridPointerLike) => {
       if (dragRef.current?.moved) return;
       if (Date.now() < ignoreClickUntil.current) return;
       if (isInteractiveTarget(e.target)) return;
@@ -795,9 +812,10 @@ function DayView({
         return;
       }
       setHoursNotice(null);
+      const point = menuPointInContainer(e, gridRef.current);
       setCreateMenu({
-        x: e.clientX,
-        y: e.clientY,
+        x: point.x,
+        y: point.y,
         day,
         time: info.time,
       });
@@ -969,7 +987,7 @@ function DayView({
       >
         <p className="text-xs tracking-wide text-karsa-faint uppercase">
           {day.toLocaleDateString(undefined, { weekday: "long" })}
-          {closed ? " Â· Closed" : ""}
+          {closed ? " · Closed" : ""}
         </p>
         <h2 className="mt-0.5 font-display text-xl text-karsa-text">
           {day.toLocaleDateString(undefined, {
@@ -1037,6 +1055,27 @@ function DayView({
               bounds={bounds}
             />
           ) : null}
+          {createMenu ? (
+            <CreateMenuPopup
+              menu={createMenu}
+              onClose={() => setCreateMenu(null)}
+              onBook={() => {
+                onOpenBook({
+                  date: formatYmd(createMenu.day),
+                  time: createMenu.time,
+                  employeeId,
+                });
+              }}
+              onBreak={() => {
+                const pending = pendingBreakRef.current;
+                window.alert(
+                  pending
+                    ? `In the live app this adds a staff break (${pending.start} – ${pending.end}).`
+                    : "In the live app this adds a staff break on the calendar.",
+                );
+              }}
+            />
+          ) : null}
         </div>
       </div>
       {hoursNotice ? (
@@ -1048,28 +1087,6 @@ function DayView({
         <p className="border-t border-karsa-border-subtle px-3 py-2 text-xs text-karsa-danger">
           {dragError}
         </p>
-      ) : null}
-
-      {createMenu ? (
-        <CreateMenuPopup
-          menu={createMenu}
-          onClose={() => setCreateMenu(null)}
-          onBook={() => {
-            onOpenBook({
-              date: formatYmd(createMenu.day),
-              time: createMenu.time,
-              employeeId,
-            });
-          }}
-          onBreak={() => {
-            const pending = pendingBreakRef.current;
-            window.alert(
-              pending
-                ? `In the live app this adds a staff break (${pending.start} â€“ ${pending.end}).`
-                : "In the live app this adds a staff break on the calendar.",
-            );
-          }}
-        />
       ) : null}
     </div>
   );
@@ -1330,7 +1347,7 @@ export function CalendarPage() {
       });
     }
     const end = addDays(weekStart, 6);
-    return `${weekStart.toLocaleDateString(undefined, { month: "short", day: "numeric" })} â€“ ${end.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}`;
+    return `${weekStart.toLocaleDateString(undefined, { month: "short", day: "numeric" })} – ${end.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}`;
   }, [anchor, view, weekStart]);
 
   const pushParams = useCallback(

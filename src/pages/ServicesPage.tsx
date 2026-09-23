@@ -13,6 +13,7 @@ import {
   type Service,
 } from "../lib/store";
 import { useDemoStore } from "../lib/use-demo-store";
+import { SaveButton } from "../components/SaveButton";
 import {
   filterServicesForLocation,
   useDemoLocationScope,
@@ -366,7 +367,11 @@ function EditServiceForm({
   const [draft, setDraft] = useState(() =>
     initialDraft(service, locations, selectedLocationIds),
   );
+  const [savedDraft, setSavedDraft] = useState(() =>
+    JSON.stringify(initialDraft(service, locations, selectedLocationIds)),
+  );
   const [message, setMessage] = useState<string | null>(null);
+  const dirty = JSON.stringify(draft) !== savedDraft;
   const [error, setError] = useState<string | null>(null);
 
   return (
@@ -385,6 +390,7 @@ function EditServiceForm({
           active: service.active,
         });
         setError(null);
+        setSavedDraft(JSON.stringify({ ...draft }));
         setMessage("Saved.");
       }}
     >
@@ -394,12 +400,11 @@ function EditServiceForm({
         <p className="text-sm text-karsa-accent-strong">{message}</p>
       ) : null}
       <div className="flex flex-wrap gap-2">
-        <button
-          type="submit"
-          className="rounded-md bg-karsa-accent px-3 py-1.5 text-sm font-medium text-karsa-bg"
-        >
-          Save
-        </button>
+        <SaveButton
+          dirty={dirty}
+          saveLabel="Save"
+          className="rounded-md bg-karsa-accent px-3 py-1.5 text-sm font-medium text-karsa-bg disabled:opacity-60"
+        />
         <button
           type="button"
           className="rounded-md border border-karsa-border px-3 py-1.5 text-sm text-karsa-muted"

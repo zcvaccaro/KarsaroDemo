@@ -336,7 +336,7 @@ export function TemplateFormPreview({
   return (
     <div
       className={[
-        "public-form-shell rounded-md bg-[#f7f4ef] px-4 py-8 text-stone-900 sm:px-6",
+        "public-form-shell scheme-light rounded-md bg-[#f7f4ef] px-4 py-8 text-stone-900 sm:px-6",
         className,
       ]
         .filter(Boolean)

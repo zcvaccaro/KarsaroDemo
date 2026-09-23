@@ -43,36 +43,38 @@ export function HistoryNav() {
   }
 
   return (
-    <div className="flex items-center justify-between gap-3">
-      <div className="flex items-center gap-2">
+    <div className="flex min-w-0 items-center justify-between gap-3">
+      <div className="flex shrink-0 items-center gap-2">
         <button
           type="button"
           onClick={() => navigate(-1)}
-          className={`${navBtnClass} flex flex-col items-center gap-0.5 leading-tight md:flex-row md:gap-1`}
+          className={`${navBtnClass} inline-flex items-center gap-1`}
           aria-label="Go back"
         >
-          <span>Back</span>
-          <span aria-hidden className="md:order-first">
-            ←
-          </span>
+          <span aria-hidden>←</span>
+          <span className="hidden md:inline">Back</span>
         </button>
         <button
           type="button"
           onClick={() => navigate(1)}
-          className={`${navBtnClass} flex flex-col items-center gap-0.5 leading-tight md:flex-row md:gap-1`}
+          className={`${navBtnClass} inline-flex items-center gap-1`}
           aria-label="Go forward"
         >
-          <span>Forward</span>
           <span aria-hidden>→</span>
+          <span className="hidden md:inline">Forward</span>
         </button>
       </div>
 
-      <div className="flex items-center gap-2">
-        <DemoRoleSwitcher />
-      <div ref={rootRef} className="relative shrink-0">
+      <div className="flex min-w-0 items-center gap-2">
+        <div className="contents md:flex md:min-w-0 md:items-center md:gap-2">
+          <div className="md:order-3">
+            <ThemeToggle />
+          </div>
+          <div className="flex min-w-0 flex-col items-end gap-1.5 md:contents">
+      <div ref={rootRef} className="relative min-w-0 max-w-full md:order-2">
         <button
           type="button"
-          className={`${navBtnClass} inline-flex max-w-[14rem] items-center gap-2`}
+          className={`${navBtnClass} inline-flex max-w-[10rem] items-center gap-2 md:max-w-[14rem]`}
           aria-label="Filter by location"
           aria-haspopup="listbox"
           aria-expanded={open}
@@ -135,7 +137,11 @@ export function HistoryNav() {
           </ul>
         ) : null}
       </div>
-        <ThemeToggle />
+        <div className="md:order-1">
+          <DemoRoleSwitcher />
+        </div>
+          </div>
+        </div>
       </div>
     </div>
   );

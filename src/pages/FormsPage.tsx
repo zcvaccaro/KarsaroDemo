@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { KarsaToggleSwitch } from "../components/karsa-toggle-switch";
 import { PageLink } from "../components/PageLink";
+import { SaveButton } from "../components/SaveButton";
 import { TemplateFormPreview } from "../components/TemplateFormPreview";
 import {
   createFormFromTemplate,
@@ -288,6 +289,7 @@ export function FormCustomizerPage() {
     form?.showInCalendarDescription ?? false,
   );
   const [savedFlash, setSavedFlash] = useState(false);
+  const [dirty, setDirty] = useState(Boolean(form?.isDraft));
   const [newFieldLabel, setNewFieldLabel] = useState("");
 
   useEffect(() => {
@@ -358,6 +360,7 @@ export function FormCustomizerPage() {
       isDraft: false,
       active: true,
     });
+    setDirty(false);
     setSavedFlash(true);
     window.setTimeout(() => setSavedFlash(false), 2000);
   }
@@ -491,7 +494,11 @@ export function FormCustomizerPage() {
   const customFields = fieldsInSection("custom_fields");
 
   return (
-    <div className="mx-auto max-w-7xl">
+    <div
+      className="mx-auto max-w-7xl"
+      onInput={() => setDirty(true)}
+      onChange={() => setDirty(true)}
+    >
       <p className="text-xs font-medium tracking-[0.16em] text-karsa-faint uppercase">
         Forms
       </p>
@@ -717,9 +724,13 @@ export function FormCustomizerPage() {
                   {savedFlash ? (
                     <p className="text-sm text-karsa-accent-strong">Saved.</p>
                   ) : null}
-                  <button type="button" onClick={save} className={btnPrimary}>
-                    {form.isDraft ? "Save form" : "Save changes"}
-                  </button>
+                  <SaveButton
+                    type="button"
+                    dirty={dirty}
+                    saveLabel={form.isDraft ? "Save form" : "Save changes"}
+                    className={`${btnPrimary} disabled:opacity-60`}
+                    onClick={save}
+                  />
                 </div>
               </div>
             </div>
@@ -1129,9 +1140,13 @@ export function FormCustomizerPage() {
           </aside>
         </div>
 
-        <button type="button" onClick={save} className={`${btnPrimary} mt-2`}>
-          {form.isDraft ? "Save form" : "Save changes"}
-        </button>
+        <SaveButton
+          type="button"
+          dirty={dirty}
+          saveLabel={form.isDraft ? "Save form" : "Save changes"}
+          className={`${btnPrimary} mt-2 disabled:opacity-60`}
+          onClick={save}
+        />
       </div>
     </div>
   );

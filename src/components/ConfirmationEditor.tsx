@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { SaveButton } from "./SaveButton";
 import { Link } from "react-router-dom";
 import { ConfirmationMessageEditor } from "./ConfirmationMessageEditor";
 import { confirmationPageTitle, formConfirmationHtml } from "../lib/store";
@@ -17,12 +18,16 @@ export function ConfirmationEditor({
   const [title, setTitle] = useState(defaultTitle);
   const [html, setHtml] = useState(() => formConfirmationHtml(formName));
   const [message, setMessage] = useState<string | null>(null);
+  const [dirty, setDirty] = useState(false);
 
   return (
     <form
       className="mt-8 space-y-6"
+      onInput={() => setDirty(true)}
+      onChange={() => setDirty(true)}
       onSubmit={(e) => {
         e.preventDefault();
+        setDirty(false);
         setMessage(
           "In the live app this saves the confirmation pair. Demo preview only — booking flow uses seeded confirmation HTML.",
         );
@@ -82,12 +87,11 @@ export function ConfirmationEditor({
         <p className="text-sm text-karsa-accent-strong">{message}</p>
       ) : null}
 
-      <button
-        type="submit"
-        className="rounded-md bg-karsa-accent px-4 py-2.5 text-sm font-medium text-karsa-bg"
-      >
-        Save confirmation
-      </button>
+      <SaveButton
+        dirty={dirty}
+        saveLabel="Save confirmation"
+        className="rounded-md bg-karsa-accent px-4 py-2.5 text-sm font-medium text-karsa-bg disabled:opacity-60"
+      />
     </form>
   );
 }

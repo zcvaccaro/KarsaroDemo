@@ -21,6 +21,7 @@ import {
 } from "../lib/store";
 import { useIsMobile } from "../lib/use-is-mobile";
 import { useDemoStore } from "../lib/use-demo-store";
+import { SaveButton } from "../components/SaveButton";
 
 const CARD_W = 176;
 const GAP_W = 24;
@@ -451,6 +452,9 @@ export function BookingFlowPage() {
   const [resetMessage, setResetMessage] = useState("");
   const [testOpen, setTestOpen] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
+  const flowFingerprint = JSON.stringify({ steps, after: appointmentAfter });
+  const [savedFingerprint, setSavedFingerprint] = useState(flowFingerprint);
+  const flowDirty = flowFingerprint !== savedFingerprint;
   const [dragging, setDragging] = useState(false);
   const [dragX, setDragX] = useState<number | null>(null);
   const grabOffsetXRef = useRef(0);
@@ -459,6 +463,12 @@ export function BookingFlowPage() {
   useEffect(() => {
     setSteps(flowSteps);
     setAppointmentAfter(appointmentCreatedAfterStepOrder);
+    setSavedFingerprint(
+      JSON.stringify({
+        steps: flowSteps,
+        after: appointmentCreatedAfterStepOrder,
+      }),
+    );
   }, [flowSteps, appointmentCreatedAfterStepOrder]);
 
   const clientForms = useMemo(
@@ -658,15 +668,18 @@ export function BookingFlowPage() {
 
   function onResetToDefault() {
     resetBookingFlowToDefault();
-    setSteps(defaultFlowSteps());
+    const next = defaultFlowSteps();
+    setSteps(next);
     setAppointmentAfter(1);
     setSelectedId(null);
+    setSavedFingerprint(JSON.stringify({ steps: next, after: 1 }));
     setResetMessage("Booking flow reset to default.");
     window.setTimeout(() => setResetMessage(""), 3500);
   }
 
   function onSave() {
     setBookingFlow(steps, appointmentAfter);
+    setSavedFingerprint(JSON.stringify({ steps, after: appointmentAfter }));
     setSavedFlash(true);
     window.setTimeout(() => setSavedFlash(false), 2000);
   }
@@ -712,13 +725,13 @@ export function BookingFlowPage() {
                 .
               </p>
             </div>
-            <button
+            <SaveButton
               type="button"
+              dirty={flowDirty}
+              saveLabel="Save booking flow"
+              className="rounded-md bg-karsa-accent px-4 py-2 text-sm font-medium text-karsa-bg disabled:opacity-50"
               onClick={onSave}
-              className="rounded-md bg-karsa-accent px-4 py-2 text-sm font-medium text-karsa-bg"
-            >
-              Save booking flow
-            </button>
+            />
             <button
               type="button"
               onClick={() => setTestOpen(true)}
@@ -1067,13 +1080,13 @@ export function BookingFlowPage() {
           <p className="text-sm text-karsa-accent-strong">Saved.</p>
         ) : null}
 
-        <button
+        <SaveButton
           type="button"
+          dirty={flowDirty}
+          saveLabel="Save booking flow"
+          className="rounded-md bg-karsa-accent px-4 py-2.5 text-sm font-medium text-karsa-bg disabled:opacity-50"
           onClick={onSave}
-          className="rounded-md bg-karsa-accent px-4 py-2.5 text-sm font-medium text-karsa-bg"
-        >
-          Save booking flow
-        </button>
+        />
       </div>
     </div>
   );
