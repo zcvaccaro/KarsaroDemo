@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { formatTime } from "./calendar/calendar-grid";
 import { DateInput } from "./inputs/DateInput";
 import { HmTimeSelect } from "./inputs/HmTimeSelect";
@@ -32,6 +32,7 @@ export function AppointmentDetailModal({
   onClose: () => void;
 }) {
   const store = useDemoStore();
+  const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
   const [charging, setCharging] = useState(false);
   const row = store.appointments.find((a) => a.id === appointmentId);
@@ -218,7 +219,11 @@ export function AppointmentDetailModal({
                   <Link
                     to={`/dashboard/clients/${client.id}`}
                     className="text-karsa-accent-strong underline-offset-4 hover:underline"
-                    onClick={() => onClose()}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      onClose();
+                      navigate(`/dashboard/clients/${client.id}`);
+                    }}
                   >
                     {clientDisplayName(client)}
                   </Link>
