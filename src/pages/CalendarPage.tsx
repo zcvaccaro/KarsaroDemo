@@ -118,20 +118,21 @@ function DayWaitlistDropdown({
 }: {
   items: WaitlistChip[];
   compact?: boolean;
-  placement?: "default" | "day-header";
+  placement?: "default" | "day-header" | "month-cell";
 }) {
   const [open, setOpen] = useState(false);
   const { openWaitlist } = useEntityModals();
   if (items.length === 0) return null;
 
   const isHeader = placement === "day-header";
+  const isMonthCell = placement === "month-cell";
 
   return (
     <div
       className={`relative ${
         isHeader
           ? "flex shrink-0 flex-col items-end"
-          : compact
+          : compact || isMonthCell
             ? ""
             : "mt-1.5"
       }`}
@@ -166,13 +167,17 @@ function DayWaitlistDropdown({
             ? `w-full min-w-[11rem] overflow-hidden transition-[max-height,opacity] duration-200 ease-out ${
                 open ? "mt-1.5 max-h-64 opacity-100" : "max-h-0 opacity-0"
               }`
-            : `grid transition-[grid-template-rows,opacity] duration-200 ease-out ${
-                open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
-              }`
+            : isMonthCell
+              ? `absolute top-full left-1/2 z-30 mt-1 w-max min-w-[8.5rem] -translate-x-1/2 overflow-hidden rounded-md border border-dashed border-karsa-warning/50 bg-karsa-bg shadow-lg transition-[max-height,opacity] duration-200 ease-out ${
+                  open ? "max-h-64 opacity-100" : "max-h-0 opacity-0"
+                }`
+              : `grid transition-[grid-template-rows,opacity] duration-200 ease-out ${
+                  open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+                }`
         }`}
       >
-        {isHeader ? (
-          <ul className="overflow-y-auto rounded-md border border-dashed border-karsa-warning/50 bg-karsa-warning/10 py-1">
+        {isHeader || isMonthCell ? (
+          <ul className={`overflow-y-auto py-1 ${isMonthCell ? "bg-karsa-warning/10" : "rounded-md border border-dashed border-karsa-warning/50 bg-karsa-warning/10"}`}>
             {items.map((item) => (
               <li key={item.id}>
                 <button
@@ -1124,8 +1129,8 @@ function MonthView({
   const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   return (
-    <div className="overflow-hidden rounded-lg border border-karsa-border-subtle">
-      <div className="grid grid-cols-7 border-b border-karsa-border-subtle bg-karsa-surface">
+    <div className="rounded-lg border border-karsa-border-subtle">
+      <div className="grid grid-cols-7 overflow-hidden rounded-t-lg border-b border-karsa-border-subtle bg-karsa-surface">
         {weekdays.map((w) => (
           <div
             key={w}
@@ -1135,7 +1140,7 @@ function MonthView({
           </div>
         ))}
       </div>
-      <div className="grid grid-cols-7">
+      <div className="grid grid-cols-7 overflow-visible">
         {cells.map((day, idx) => {
           if (!day) {
             return (
@@ -1153,11 +1158,18 @@ function MonthView({
           const dayWait = waitlistForDay(waitlist, day);
 
           return (
-            <button
+            <div
               key={formatYmd(day)}
-              type="button"
+              role="button"
+              tabIndex={0}
               onClick={() => onSelectDay(day)}
-              className={`relative min-h-[88px] border-t border-r border-karsa-border-subtle p-2 text-left transition-colors hover:bg-karsa-surface ${
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onSelectDay(day);
+                }
+              }}
+              className={`relative min-h-[88px] cursor-pointer border-t border-r border-karsa-border-subtle p-2 text-left transition-colors hover:bg-karsa-surface ${
                 closed
                   ? CLOSED_HOURS_OVERLAY_CLASS
                   : today
@@ -1165,22 +1177,26 @@ function MonthView({
                     : ""
               }`}
             >
-              <div className="flex flex-col items-stretch gap-0.5 md:flex-row md:items-center md:gap-1">
-                {dayWait.length > 0 ? (
-                  <div className="order-1 md:order-2 md:min-w-0">
-                    <DayWaitlistDropdown items={dayWait} compact />
+              <span
+                className={`inline-flex size-7 items-center justify-center rounded-full text-sm ${
+                  today && !closed
+                    ? "bg-karsa-accent font-medium text-karsa-bg"
+                    : "text-karsa-text"
+                }`}
+              >
+                {day.getDate()}
+              </span>
+              {dayWait.length > 0 ? (
+                <div className="pointer-events-none absolute inset-0 z-[3] flex items-center justify-center">
+                  <div className="pointer-events-auto">
+                    <DayWaitlistDropdown
+                      items={dayWait}
+                      compact
+                      placement="month-cell"
+                    />
                   </div>
-                ) : null}
-                <span
-                  className={`order-2 inline-flex size-7 shrink-0 items-center justify-center rounded-full text-sm md:order-1 ${
-                    today && !closed
-                      ? "bg-karsa-accent font-medium text-karsa-bg"
-                      : "text-karsa-text"
-                  }`}
-                >
-                  {day.getDate()}
-                </span>
-              </div>
+                </div>
+              ) : null}
               {closed ? (
                 <p className="mt-1 text-[10px] text-karsa-text/85">Closed</p>
               ) : null}
@@ -1201,7 +1217,7 @@ function MonthView({
                   ) : null}
                 </div>
               ) : null}
-            </button>
+            </div>
           );
         })}
       </div>
@@ -1266,6 +1282,21 @@ export function CalendarPage() {
     }));
   }, [locationId, state.locations]);
   const hoursMode: "location" | "employee" = employeeId ? "employee" : "location";
+  const selectedEmployee = useMemo(
+    () => scopedEmployees.find((employee) => employee.id === employeeId) ?? null,
+    [employeeId, scopedEmployees],
+  );
+  const scheduleHours = useMemo<CalendarLocationHour[]>(() => {
+    if (!employeeId || !selectedEmployee) return locationHours;
+    return selectedEmployee.availability
+      .filter((row) => !row.unavailable)
+      .map((row) => ({
+        dayOfWeek: row.dayOfWeek,
+        startTime: row.startTime,
+        endTime: row.endTime,
+        closed: false,
+      }));
+  }, [employeeId, locationHours, selectedEmployee]);
   const gridBounds = useMemo(
     () => computeLocationGridBounds(locationHours),
     [locationHours],
@@ -1463,7 +1494,7 @@ export function CalendarPage() {
             appointments={calendarAppointments}
             waitlist={calendarWaitlist}
             employeeId={employeeId}
-            locationHours={locationHours}
+            locationHours={scheduleHours}
             hoursMode={hoursMode}
             bounds={gridBounds}
             storeAppts={state.appointments}
@@ -1477,7 +1508,7 @@ export function CalendarPage() {
             appointments={calendarAppointments}
             waitlist={calendarWaitlist}
             employeeId={employeeId}
-            locationHours={locationHours}
+            locationHours={scheduleHours}
             hoursMode={hoursMode}
             bounds={gridBounds}
             storeAppts={state.appointments}
@@ -1490,7 +1521,7 @@ export function CalendarPage() {
             monthStart={monthStart}
             appointments={calendarAppointments}
             waitlist={calendarWaitlist}
-            locationHours={locationHours}
+            locationHours={scheduleHours}
             hoursMode={hoursMode}
             onSelectDay={goToDayView}
           />

@@ -332,30 +332,23 @@ export function getClosedOverlayBands(
     return bands;
   }
 
-  if (hours.length === 0) {
-    return [{ top: 0, height: ((gridEnd - gridStart) / 60) * hourPx, full: true }];
-  }
-  const open = getOpenWindowsForDay(hours, day)
-    .map((w) => ({
-      start: Math.max(gridStart, w.start),
-      end: Math.min(gridEnd, w.end),
-    }))
-    .filter((w) => w.end > w.start);
-
-  if (open.length === 0) {
+  const windows = getOpenWindowsForDay(hours, day);
+  if (windows.length === 0) {
     return [{ top: 0, height: ((gridEnd - gridStart) / 60) * hourPx, full: true }];
   }
 
   const bands: { top: number; height: number }[] = [];
   let cursor = gridStart;
-  for (const window of open) {
-    if (window.start > cursor) {
+  for (const window of windows) {
+    const start = Math.max(gridStart, window.start);
+    const end = Math.min(gridEnd, window.end);
+    if (start > cursor) {
       bands.push({
         top: ((cursor - gridStart) / 60) * hourPx,
-        height: ((window.start - cursor) / 60) * hourPx,
+        height: ((start - cursor) / 60) * hourPx,
       });
     }
-    cursor = Math.max(cursor, window.end);
+    cursor = Math.max(cursor, end);
   }
   if (cursor < gridEnd) {
     bands.push({

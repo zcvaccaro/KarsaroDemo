@@ -44,9 +44,11 @@ function hoursForLocation(location?: Location): LocationHour[] {
 function LocationFields({
   location,
   hoursEditable = false,
+  showNameHint = false,
 }: {
   location?: Location;
   hoursEditable?: boolean;
+  showNameHint?: boolean;
 }) {
   const hours = hoursForLocation(location);
 
@@ -72,6 +74,12 @@ function LocationFields({
             value={location?.name ?? ""}
             className={inputClass}
           />
+          {showNameHint ? (
+            <p className="mt-1 text-xs text-karsa-faint">
+              This name will be displayed on your booking form&apos;s location
+              selector for clients.
+            </p>
+          ) : null}
         </div>
         <div className="sm:col-span-2">
           <label className={labelClass}>Timezone</label>
@@ -247,7 +255,7 @@ function DisabledCreateLocationForm() {
           Create
         </button>
       </div>
-      <LocationFields />
+      <LocationFields showNameHint />
       <p className="text-xs text-karsa-faint">
         Sample location — creating extras and upgrade confirms are live-app only
       </p>

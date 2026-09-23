@@ -13,7 +13,9 @@ import {
   clientDisplayName,
   formatClock,
   formatServiceOptionLabel,
+  isBookableEmployee,
   setEmployeeAvailability,
+  setEmployeeLocations,
   setEmployeeRole,
   setEmployeeServices,
   todayISO,
@@ -25,6 +27,17 @@ import {
 import { useDemoStore } from "../lib/use-demo-store";
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const LOCATION_NAME_LIMIT = 9;
+
+function shortLocationName(name: string) {
+  if (name.length <= LOCATION_NAME_LIMIT) {
+    return { label: name, truncated: false };
+  }
+  return {
+    label: `${name.slice(0, LOCATION_NAME_LIMIT)}...`,
+    truncated: true,
+  };
+}
 
 function shortDate(ymd: string) {
   const [y, m, d] = ymd.split("-").map(Number);
@@ -53,7 +66,7 @@ function UnavailableEdge({
           : "border-karsa-border bg-karsa-bg text-karsa-muted hover:border-karsa-accent hover:bg-karsa-accent-soft hover:text-karsa-accent-strong"
       }`}
     >
-      Unavailable
+      Unavailable for bookings
     </button>
   );
 }
@@ -498,6 +511,9 @@ export function EmployeeProfilePage() {
   const [bookable, setBookable] = useState(employee?.bookable ?? true);
   const [hoursSaved, setHoursSaved] = useState(true);
   const [servicesSaved, setServicesSaved] = useState(true);
+  const [locationIds, setLocationIds] = useState<string[]>(
+    employee?.locationIds ?? [],
+  );
 
   useEffect(() => {
     if (!employee) return;
@@ -505,9 +521,14 @@ export function EmployeeProfilePage() {
     setServiceIds([...employee.serviceIds]);
     setRole(employee.role);
     setBookable(employee.bookable);
+    setLocationIds(
+      employee.locationIds.length > 0
+        ? [...employee.locationIds]
+        : locations.map((location) => location.id),
+    );
     setHoursSaved(false);
     setServicesSaved(false);
-  }, [employee]);
+  }, [employee, locations]);
 
   const activeServices = useMemo(
     () => services.filter((s) => s.active),
@@ -653,74 +674,120 @@ export function EmployeeProfilePage() {
         </div>
       </section>
 
-      <section className="mt-8 border border-karsa-border-subtle p-4">
-        <h2 className="text-sm font-medium text-karsa-text">Weekly hours</h2>
-        <p className="mt-1 text-xs text-karsa-faint">
-          These hours are when this person can take appointments — not their
-          full time on the clock. Independent of location open hours in this
-          demo.
-        </p>
-        <div className="mt-4 space-y-2">
-          {availability.map((day) => (
-            <div
-              key={day.dayOfWeek}
-              className="flex flex-wrap items-stretch gap-3 rounded-md border border-karsa-border-subtle p-2 sm:p-3"
-            >
-              <UnavailableEdge
-                selected={day.unavailable}
-                onToggle={() =>
-                  updateDay(day.dayOfWeek, {
-                    unavailable: !day.unavailable,
-                  })
-                }
-              />
-              <div className="flex min-w-0 flex-1 flex-col justify-center gap-2">
-                <p className="text-sm font-medium text-karsa-text">
-                  {DAY_LABELS[day.dayOfWeek]}
-                </p>
-                {day.unavailable ? (
-                  <p className="text-xs text-karsa-faint">Not available</p>
-                ) : (
-                  <div className="flex flex-wrap items-center gap-2">
-                    <HmTimeSelect
-                      value={day.startTime}
-                      onChange={(v) =>
-                        updateDay(day.dayOfWeek, { startTime: v })
-                      }
-                      aria-label={`${DAY_LABELS[day.dayOfWeek]} start`}
-                      className={inputClass}
+      <div className="mt-6">
+        <p className="text-xs text-karsa-faint">Locations Worked</p>
+        <div className="mt-1 rounded-md border border-karsa-border bg-karsa-bg px-3 py-2.5">
+          {locations.length === 0 ? (
+            <p className="text-sm text-karsa-faint">
+              Locations you add will appear here.
+            </p>
+          ) : (
+            <div className="grid auto-cols-max grid-flow-col grid-rows-2 justify-start gap-x-6 gap-y-1.5">
+              {locations.map((loc) => {
+                const selected = locationIds.includes(loc.id);
+                const { label, truncated } = shortLocationName(loc.name);
+                return (
+                  <div
+                    key={loc.id}
+                    className="flex w-max items-center gap-1"
+                  >
+                    <KarsaToggleSwitch
+                      size="compact"
+                      checked={selected}
+                      ariaLabel={loc.name}
+                      onChange={(next) => {
+                        const ids = next
+                          ? [...locationIds, loc.id]
+                          : locationIds.filter((id) => id !== loc.id);
+                        setLocationIds(ids);
+                        setEmployeeLocations(employee.id, ids);
+                      }}
                     />
-                    <span className="text-xs text-karsa-faint">to</span>
-                    <HmTimeSelect
-                      value={day.endTime}
-                      onChange={(v) =>
-                        updateDay(day.dayOfWeek, { endTime: v })
-                      }
-                      aria-label={`${DAY_LABELS[day.dayOfWeek]} end`}
-                      className={inputClass}
-                    />
+                    <span
+                      className="text-sm whitespace-nowrap text-karsa-text"
+                      title={truncated ? loc.name : undefined}
+                    >
+                      {label}
+                    </span>
                   </div>
-                )}
-              </div>
+                );
+              })}
             </div>
-          ))}
+          )}
         </div>
-        {hoursSaved ? (
-          <p className="mt-3 text-sm text-karsa-accent-strong">
-            Weekly hours saved.
+      </div>
+
+      {isBookableEmployee({ role, bookable }) ? (
+        <section className="mt-8 border border-karsa-border-subtle p-4">
+          <h2 className="text-sm font-medium text-karsa-text">
+            Bookable Weekly Hours
+          </h2>
+          <p className="mt-1 text-xs text-karsa-faint">
+            These hours are when this person can take appointments — not
+            necessarily their full time on the clock.
           </p>
-        ) : null}
-        <SaveButton
-          type="button"
-          dirty={!hoursSaved}
-          saveLabel="Save weekly hours"
-          className="mt-4 rounded-md bg-karsa-accent px-4 py-2 text-sm font-medium text-karsa-bg disabled:opacity-60"
-          onClick={() => {
-            setEmployeeAvailability(employee.id, availability);
-            setHoursSaved(true);
-          }}
-        />
-      </section>
+          <div className="mt-4 space-y-2">
+            {availability.map((day) => (
+              <div
+                key={day.dayOfWeek}
+                className="flex flex-wrap items-stretch gap-3 rounded-md border border-karsa-border-subtle p-2 sm:p-3"
+              >
+                <UnavailableEdge
+                  selected={day.unavailable}
+                  onToggle={() => {
+                    updateDay(day.dayOfWeek, {
+                      unavailable: !day.unavailable,
+                    });
+                  }}
+                />
+                <div className="flex min-w-0 flex-1 flex-col justify-center gap-2">
+                  <p className="text-sm font-medium text-karsa-text">
+                    {DAY_LABELS[day.dayOfWeek]}
+                  </p>
+                  {day.unavailable ? (
+                    <p className="text-xs text-karsa-faint">Not available</p>
+                  ) : (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <HmTimeSelect
+                        value={day.startTime}
+                        onChange={(v) =>
+                          updateDay(day.dayOfWeek, { startTime: v })
+                        }
+                        aria-label={`${DAY_LABELS[day.dayOfWeek]} start`}
+                        className={inputClass}
+                      />
+                      <span className="text-xs text-karsa-faint">to</span>
+                      <HmTimeSelect
+                        value={day.endTime}
+                        onChange={(v) =>
+                          updateDay(day.dayOfWeek, { endTime: v })
+                        }
+                        aria-label={`${DAY_LABELS[day.dayOfWeek]} end`}
+                        className={inputClass}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+          {hoursSaved ? (
+            <p className="mt-3 text-sm text-karsa-accent-strong">
+              Bookable weekly hours saved.
+            </p>
+          ) : null}
+          <SaveButton
+            type="button"
+            dirty={!hoursSaved}
+            saveLabel="Save weekly hours"
+            className="mt-4 rounded-md bg-karsa-accent px-4 py-2 text-sm font-medium text-karsa-bg disabled:opacity-60"
+            onClick={() => {
+              setEmployeeAvailability(employee.id, availability);
+              setHoursSaved(true);
+            }}
+          />
+        </section>
+      ) : null}
 
       <section className="mt-8 border border-karsa-border-subtle p-4">
         <h2 className="text-sm font-medium text-karsa-text">
@@ -801,21 +868,6 @@ export function EmployeeProfilePage() {
           </ul>
         </section>
       ) : null}
-
-      <section className="mt-8 border border-karsa-border-subtle p-4">
-        <h2 className="text-sm font-medium text-karsa-text">Locations</h2>
-        <p className="mt-1 text-xs text-karsa-faint">Read-only in this demo.</p>
-        <ul className="mt-3 space-y-2">
-          {locations.map((loc) => (
-            <li
-              key={loc.id}
-              className="border border-karsa-border-subtle px-3 py-2 text-sm text-karsa-text"
-            >
-              {loc.name}
-            </li>
-          ))}
-        </ul>
-      </section>
 
       <section className="mt-8 border border-karsa-border-subtle p-4">
         <h2 className="text-sm font-medium text-karsa-text">Breaks / time off</h2>

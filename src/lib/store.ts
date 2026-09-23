@@ -5,6 +5,14 @@ export type EmployeeAvailability = {
   unavailable: boolean;
 };
 
+export type EmployeeWorkScheduleDay = {
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  off: boolean;
+  locationIds: string[];
+};
+
 export type Employee = {
   id: string;
   name: string;
@@ -15,6 +23,8 @@ export type Employee = {
   /** Empty = works at every location. */
   locationIds: string[];
   availability: EmployeeAvailability[];
+  /** Records-only office days/hours — not used by the calendar. */
+  workSchedule: EmployeeWorkScheduleDay[];
 };
 
 export function isBookableEmployee(
@@ -960,6 +970,16 @@ function defaultEmployeeAvailability(): EmployeeAvailability[] {
   }));
 }
 
+function defaultEmployeeWorkSchedule(): EmployeeWorkScheduleDay[] {
+  return Array.from({ length: 7 }, (_, dayOfWeek) => ({
+    dayOfWeek,
+    startTime: "09:00",
+    endTime: "17:00",
+    off: dayOfWeek === 0 || dayOfWeek === 6,
+    locationIds: [],
+  }));
+}
+
 function defaultEmailTemplates(businessName = "Sample Studio"): EmailTemplate[] {
   return [
     {
@@ -1113,6 +1133,7 @@ export function createSeedState(): DemoState {
   ];
   const allServiceIds = services.map((s) => s.id);
   const weekHours = defaultEmployeeAvailability();
+  const weekWork = defaultEmployeeWorkSchedule();
 
   const employees: Employee[] = [
     {
@@ -1124,6 +1145,7 @@ export function createSeedState(): DemoState {
       serviceIds: [...allServiceIds],
       locationIds: [],
       availability: weekHours.map((row) => ({ ...row })),
+      workSchedule: weekWork.map((row) => ({ ...row })),
     },
     {
       id: "e2",
@@ -1134,6 +1156,7 @@ export function createSeedState(): DemoState {
       serviceIds: [...allServiceIds],
       locationIds: [],
       availability: weekHours.map((row) => ({ ...row })),
+      workSchedule: weekWork.map((row) => ({ ...row })),
     },
     {
       id: "e3",
@@ -1144,6 +1167,7 @@ export function createSeedState(): DemoState {
       serviceIds: ["s1", "s2", "s3"],
       locationIds: [mainStudio.id],
       availability: weekHours.map((row) => ({ ...row })),
+      workSchedule: weekWork.map((row) => ({ ...row })),
     },
     {
       id: "e4",
@@ -1154,6 +1178,7 @@ export function createSeedState(): DemoState {
       serviceIds: ["s2", "s3", "s4"],
       locationIds: [eastClinic.id],
       availability: weekHours.map((row) => ({ ...row })),
+      workSchedule: weekWork.map((row) => ({ ...row })),
     },
   ];
 
@@ -1541,12 +1566,40 @@ function normalizeAvailabilityRow(
     };
   }
   const row = raw as Record<string, unknown>;
+  const startTime = typeof row.startTime === "string" ? row.startTime : "09:00";
+  const endTime = typeof row.endTime === "string" ? row.endTime : "17:00";
+  return {
+    dayOfWeek:
+      typeof row.dayOfWeek === "number" ? row.dayOfWeek : dayOfWeek,
+    startTime,
+    endTime,
+    unavailable: Boolean(row.unavailable),
+  };
+}
+
+function normalizeWorkScheduleRow(
+  raw: unknown,
+  dayOfWeek: number,
+): EmployeeWorkScheduleDay {
+  if (!raw || typeof raw !== "object") {
+    return {
+      dayOfWeek,
+      startTime: "09:00",
+      endTime: "17:00",
+      off: dayOfWeek === 0 || dayOfWeek === 6,
+      locationIds: [],
+    };
+  }
+  const row = raw as Record<string, unknown>;
   return {
     dayOfWeek:
       typeof row.dayOfWeek === "number" ? row.dayOfWeek : dayOfWeek,
     startTime: typeof row.startTime === "string" ? row.startTime : "09:00",
     endTime: typeof row.endTime === "string" ? row.endTime : "17:00",
-    unavailable: Boolean(row.unavailable),
+    off: Boolean(row.off),
+    locationIds: Array.isArray(row.locationIds)
+      ? row.locationIds.filter((id): id is string => typeof id === "string")
+      : [],
   };
 }
 
@@ -1561,6 +1614,13 @@ function normalizeEmployee(
   const availability = Array.from({ length: 7 }, (_, dayOfWeek) => {
     const row = availabilityRaw?.find((a) => a.dayOfWeek === dayOfWeek);
     return normalizeAvailabilityRow(row, dayOfWeek);
+  });
+  const workScheduleRaw = Array.isArray(raw.workSchedule)
+    ? raw.workSchedule
+    : seedFallback?.workSchedule;
+  const workSchedule = Array.from({ length: 7 }, (_, dayOfWeek) => {
+    const row = workScheduleRaw?.find((a) => a.dayOfWeek === dayOfWeek);
+    return normalizeWorkScheduleRow(row, dayOfWeek);
   });
   const serviceIds = Array.isArray(raw.serviceIds)
     ? raw.serviceIds.filter((id): id is string => typeof id === "string")
@@ -1590,6 +1650,7 @@ function normalizeEmployee(
     serviceIds,
     locationIds,
     availability,
+    workSchedule,
   };
 }
 
@@ -1879,6 +1940,33 @@ export function setEmployeeAvailability(
     ...state,
     employees: state.employees.map((e) =>
       e.id === employeeId ? { ...e, availability: normalized } : e,
+    ),
+  };
+  persist();
+}
+
+export function setEmployeeLocations(employeeId: string, locationIds: string[]) {
+  state = {
+    ...state,
+    employees: state.employees.map((e) =>
+      e.id === employeeId ? { ...e, locationIds: [...locationIds] } : e,
+    ),
+  };
+  persist();
+}
+
+export function setEmployeeWorkSchedule(
+  employeeId: string,
+  workSchedule: EmployeeWorkScheduleDay[],
+) {
+  const normalized = Array.from({ length: 7 }, (_, dayOfWeek) => {
+    const row = workSchedule.find((a) => a.dayOfWeek === dayOfWeek);
+    return normalizeWorkScheduleRow(row, dayOfWeek);
+  });
+  state = {
+    ...state,
+    employees: state.employees.map((e) =>
+      e.id === employeeId ? { ...e, workSchedule: normalized } : e,
     ),
   };
   persist();
